@@ -15,7 +15,7 @@ const slides = [
     description: "Faites vos devis & souscriptions automobiles et motos en ligne facilement et en toute sécurité.",
     bg: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?q=80&w=1600",
     buttons: [
-      { label: "Assurance Auto / Moto", primary: true }
+      { label: "Assurance Auto / Moto", primary: true, isDevis: true }
     ]
   },
   {
@@ -23,7 +23,7 @@ const slides = [
     description: "Protégez votre famille et votre maison au meilleur prix. La protection de votre logement et de vos biens personnels est notre priorité !",
     bg: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1600",
     buttons: [
-      { label: "Découvrir l'offre Habitation", primary: true }
+      { label: "Découvrir l'offre Habitation", primary: true, isDevis: true }
     ]
   },
   {
@@ -31,12 +31,12 @@ const slides = [
     description: "Découvrez l'assurance bateau de plaisance faite spécialement pour vous garantir une navigation tout en repos.",
     bg: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1600",
     buttons: [
-      { label: "Découvrir l'offre Bateau", primary: true }
+      { label: "Découvrir l'offre Bateau", primary: true, isDevis: true }
     ]
   }
 ];
 
-const HeroSlider = ({ onLoginClick }) => {
+const HeroSlider = ({ onLoginClick, onDevisClick }) => {
   const [current, setCurrent] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -65,7 +65,7 @@ const HeroSlider = ({ onLoginClick }) => {
           key={index}
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === current ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
         >
-          {/* Overlay dégradé pour améliorer la lisibilité */}
+          {/* Overlay dégradé */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60 z-10"></div>
           
           <img 
@@ -74,7 +74,7 @@ const HeroSlider = ({ onLoginClick }) => {
             className={`w-full h-full object-cover transition-transform duration-[10000ms] ease-linear ${index === current ? 'scale-110' : 'scale-100'}`} 
           />
 
-          {/* Contenu CENTRÉ verticalement et horizontalement */}
+          {/* Contenu CENTRÉ */}
           <div className="absolute inset-0 z-20 flex items-center justify-center px-6">
             <div className={`max-w-5xl text-center transition-all duration-1000 transform ${index === current ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
               
@@ -94,7 +94,10 @@ const HeroSlider = ({ onLoginClick }) => {
                 {slide.buttons.map((btn, bIdx) => (
                   <button
                     key={bIdx}
-                    onClick={() => btn.mode ? onLoginClick(btn.mode) : null}
+                    onClick={() => {
+                      if (btn.mode) onLoginClick(btn.mode);
+                      if (btn.isDevis) onDevisClick();
+                    }}
                     className={`px-12 py-5 rounded-full font-black text-[12px] uppercase tracking-[0.2em] transition-all duration-300 active:scale-95 shadow-2xl ${
                       btn.primary 
                       ? 'bg-[#e89d1b] text-white hover:bg-orange-600 hover:-translate-y-1' 
@@ -126,7 +129,7 @@ const HeroSlider = ({ onLoginClick }) => {
         </button>
       </div>
 
-      {/* Indicateurs (Dash progressifs) */}
+      {/* Indicateurs */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex gap-4">
         {slides.map((_, i) => (
           <button 

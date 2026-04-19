@@ -1,97 +1,126 @@
 import React, { useState, useEffect } from 'react';
 
-const Login = ({ initialMode = 'login' }) => {
-  // On initialise l'état selon le bouton cliqué dans le HeroSlider
+const Login = ({ initialMode = 'login', onSignupSuccess, onLoginSuccess }) => {
+  // L'état qui contrôle tout : true = Se Connecter, false = Créer un compte
   const [isLoginMode, setIsLoginMode] = useState(initialMode === 'login');
 
-  // Si on change de mode via le Slider sans fermer le composant, on met à jour
+  // Synchronisation avec les clics venant de l'accueil (HeroSlider)
   useEffect(() => {
     setIsLoginMode(initialMode === 'login');
   }, [initialMode]);
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (isLoginMode) {
+      console.log("Action: Connexion SAA");
+      if (onLoginSuccess) onLoginSuccess();
+    } else {
+      console.log("Action: Inscription SAA");
+      if (onSignupSuccess) onSignupSuccess();
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 transition-all duration-500">
+    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 font-sans">
+      <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100 transition-all duration-500">
         
-        {/* Header Institutionnel Unique */}
-        <div className="bg-[#0f172a] p-10 text-center relative">
-          <div className="inline-flex flex-col items-center leading-none mb-4">
-            <span className="text-4xl font-black text-[#e89d1b] italic tracking-tighter uppercase">saa</span>
-            <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em] mt-1">Assurances</span>
+        {/* HEADER DYNAMIQUE : Bleu SAA pour Login / Orange SAA pour Inscription */}
+        <div className={`p-12 text-center transition-colors duration-500 relative ${isLoginMode ? 'bg-[#0f172a]' : 'bg-[#e89d1b]'}`}>
+          <div className="inline-flex flex-col items-center leading-none mb-6">
+            <span className={`text-5xl font-black italic tracking-tighter uppercase ${isLoginMode ? 'text-[#e89d1b]' : 'text-white'}`}>saa</span>
+            <span className={`text-[10px] font-black uppercase tracking-[0.4em] mt-2 ${isLoginMode ? 'text-white' : 'text-slate-900'}`}>Assurances</span>
           </div>
+          
           <h2 className="text-white text-xl font-black uppercase tracking-tight italic">
-            {isLoginMode ? "Espace Client" : "Inscription"}
+            {isLoginMode ? "Espace Client" : "Créer un compte"}
           </h2>
-          <div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${isLoginMode ? 'w-full bg-[#5cb85c]' : 'w-full bg-[#e89d1b]'}`}></div>
+          
+          <div className="absolute bottom-0 left-0 w-full h-1 bg-black/10"></div>
         </div>
 
-        <div className="p-8">
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+        <div className="p-10">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             
-            {/* Nom complet affiché uniquement en mode inscription */}
+            {/* NOM COMPLET : Apparaît SEULEMENT en mode Inscription */}
             {!isLoginMode && (
               <div className="animate-fade-in">
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1">Nom Complet</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nom et Prénom</label>
                 <input 
+                  required
                   type="text" 
-                  placeholder="Votre nom et prénom" 
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#e89d1b] outline-none transition-all" 
+                  placeholder="Votre nom complet" 
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#e89d1b] focus:bg-white outline-none transition-all shadow-sm" 
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1">Identifiant / E-mail</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">E-mail / Identifiant</label>
               <input 
+                required
                 type="email" 
-                placeholder="client@email.dz" 
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#e89d1b] outline-none transition-all" 
+                placeholder="votre@email.dz" 
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#e89d1b] focus:bg-white outline-none transition-all shadow-sm" 
               />
             </div>
 
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1">Mot de passe</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Mot de passe</label>
               <input 
+                required
                 type="password" 
                 placeholder="••••••••" 
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#e89d1b] outline-none transition-all" 
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#e89d1b] focus:bg-white outline-none transition-all shadow-sm" 
               />
             </div>
 
+            {/* BOUTON PRINCIPAL : Change de texte et de couleur selon le mode */}
             <button 
               type="submit"
-              className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg transition-all active:scale-95 text-white mt-4 ${isLoginMode ? 'bg-[#5cb85c] shadow-green-100 hover:bg-green-600' : 'bg-[#e89d1b] shadow-orange-100 hover:bg-orange-600'}`}
+              className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] shadow-xl transition-all active:scale-95 text-white mt-4 ${
+                isLoginMode 
+                ? 'bg-[#0f172a] shadow-slate-200 hover:bg-slate-800' 
+                : 'bg-[#e89d1b] shadow-orange-200 hover:bg-orange-600'
+              }`}
             >
-              {isLoginMode ? 'Accéder à mon espace 🔒' : 'Confirmer l\'inscription'}
+              {isLoginMode ? 'Se Connecter 🔒' : 'Confirmer l\'Inscription'}
             </button>
           </form>
 
-          {/* Section Bas de page : Mot de passe oublié PUIS Créer un compte */}
-          <div className="mt-8 pt-6 border-t border-slate-100 text-center flex flex-col gap-3">
+          {/* SECTION DE BASCULE : Propose de changer de mode */}
+          <div className="mt-10 pt-8 border-t border-slate-100 text-center flex flex-col gap-4">
             
-            {/* 1. Mot de passe oublié (priorité haute en mode login) */}
-            {isLoginMode && (
-              <button 
-                type="button" 
-                className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-[#e89d1b] transition-colors"
-              >
-                Mot de passe oublié ?
-              </button>
-            )}
-
-            {/* 2. Bascule entre Login et Inscription */}
             <button 
+              type="button"
               onClick={() => setIsLoginMode(!isLoginMode)}
-              className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-[#e89d1b] transition-colors"
+              className="group text-[11px] font-black uppercase tracking-widest transition-all"
             >
               {isLoginMode ? (
-                <>Pas encore de compte ? <span className="text-[#e89d1b] ml-1">Créer un compte</span></>
+                <p className="text-slate-400">
+                  Nouveau chez SAA ? 
+                  <span className="text-[#e89d1b] border-b-2 border-[#e89d1b] ml-2 group-hover:text-orange-600">Créer un compte</span>
+                </p>
               ) : (
-                <>Déjà inscrit ? <span className="text-[#5cb85c] ml-1">Se connecter</span></>
+                <p className="text-slate-400">
+                  Déjà inscrit ? 
+                  <span className="text-[#0f172a] border-b-2 border-[#0f172a] ml-2 group-hover:text-blue-900">Se connecter</span>
+                </p>
               )}
             </button>
 
+            {isLoginMode && (
+              <button type="button" className="text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:text-slate-500">
+                Mot de passe oublié ?
+              </button>
+            )}
           </div>
+        </div>
+
+        <div className="bg-slate-50 p-4 text-center">
+          <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">
+            Sécurité Garantie par SAA Système SI
+          </p>
         </div>
       </div>
     </div>
