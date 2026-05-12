@@ -7,19 +7,43 @@ const Login = ({ initialMode = 'login', onSignupSuccess, onLoginSuccess }) => {
     setIsLoginMode(initialMode === 'login');
   }, [initialMode]);
 
-  // ✅ CORRECTION : variables correctement nommées en camelCase
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
 
-  // ✅ CORRECTION : handleSubmit utilise bien `email` (minuscule)
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const userData = { email };
+
     if (isLoginMode) {
-      if (onLoginSuccess) onLoginSuccess(userData);
+      try {
+        const res = await fetch('http://localhost:3001/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) return alert(data.message);
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        if (onLoginSuccess) onLoginSuccess(data.user);
+      } catch (err) {
+        alert('Erreur de connexion au serveur');
+      }
     } else {
-      if (onSignupSuccess) onSignupSuccess(userData);
+      try {
+        const res = await fetch('http://localhost:3001/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, fullName })
+        });
+        const data = await res.json();
+        if (!res.ok) return alert(data.message);
+        alert('Compte créé avec succès ! Connectez-vous.');
+        setIsLoginMode(true);
+        if (onSignupSuccess) onSignupSuccess({ email });
+      } catch (err) {
+        alert('Erreur de connexion au serveur');
+      }
     }
   };
 
@@ -27,7 +51,6 @@ const Login = ({ initialMode = 'login', onSignupSuccess, onLoginSuccess }) => {
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 font-sans">
       <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100 transition-all duration-500">
 
-        {/* HEADER */}
         <div className={`p-12 text-center transition-colors duration-500 relative ${isLoginMode ? 'bg-[#0f172a]' : 'bg-[#e89d1b]'}`}>
           <div className="inline-flex flex-col items-center leading-none mb-6">
             <span className={`text-5xl font-black italic tracking-tighter uppercase ${isLoginMode ? 'text-[#e89d1b]' : 'text-white'}`}>saa</span>
@@ -40,9 +63,7 @@ const Login = ({ initialMode = 'login', onSignupSuccess, onLoginSuccess }) => {
         </div>
 
         <div className="p-10">
-          {/* ✅ CORRECTION : onSubmit sur le form, inputs liés au state */}
           <form className="space-y-6" onSubmit={handleSubmit}>
-
             {!isLoginMode && (
               <div className="animate-fade-in">
                 <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nom et Prénom</label>

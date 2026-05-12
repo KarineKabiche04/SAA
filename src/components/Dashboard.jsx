@@ -1,21 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
-
-/* ─── DONNÉES MOCK ─────────────────────────────────────────────────────────── */
-const USER = {
-  nom: "BENALI", prenom: "KARIM", code: "SAA/AL/99201",
-  adresse: "12 RUE DES FRÈRES, ALGER-CENTRE", tel: "0550 11 22 33",
-  email: "k.benali@email.dz", points: 1250, agence: "16001 – ALGER CENTRE"
-};
-
-const POLICES = [
-  { id:"16/2026/004402", marque:"VW GOLF 8", immat:"00123-122-16", echeance:"15/04/2027", statut:"ACTIF",  prime:42120, garanties:["RC","DR","BDG","VOL"] },
-  { id:"16/2024/001187", marque:"RENAULT CLIO", immat:"10456-211-16", echeance:"03/01/2025", statut:"EXPIRÉ", prime:28400, garanties:["RC","DR"] }
-];
-
-const SINISTRES = [
-  { ref:"SIN-2025-0418", date:"18/04/2025", type:"Collision", statut:"EN COURS",  montant:85000 },
-  { ref:"SIN-2024-0912", date:"12/09/2024", type:"Bris de glace", statut:"CLÔTURÉ", montant:12500 }
-];
+import React, { useState, useEffect } from "react";
 
 /* ─── RÉFÉRENTIELS TARIFICATION ──────────────────────────────────────────── */
 const REF_GENRES = [
@@ -57,9 +40,7 @@ function calculerPrime(f) {
   const coefSexe = f.sexe === "F" ? 0.95 : 1.05;
   const valV  = parseFloat(f.valeurVenale)   || 0;
   const valR  = parseFloat(f.valeurAutoRadio) || 0;
-
   const primeBase = genre.base * zone.coef * coefAge * coefSexe;
-
   let options = 0;
   const g = f.garanties;
   if (g.bdg) options += 4500;
@@ -69,34 +50,25 @@ function calculerPrime(f) {
   if (g.pt)  options += 1250;
   if (g.ir)  options += 2800;
   if (g.tc)  options += 3500;
-
-  const acc   = valR * 0.025;
+  const acc       = valR * 0.025;
   const pAvantRed = primeBase + options;
-  const taux  = REF_REDUCTIONS.find(r => r.id === f.reduction)?.value || 0;
+  const taux      = REF_REDUCTIONS.find(r => r.id === f.reduction)?.value || 0;
   const reduction = pAvantRed * taux;
   const pApresRed = pAvantRed - reduction;
-  const majs  = (parseFloat(f.majPermis)||0) + (parseFloat(f.majAge)||0) + (parseFloat(f.majMatieres)||0);
-  const pNette = pApresRed + majs;
-  const taxes  = (pNette + acc) * 0.19;
-  const timbre = 150 + (parseInt(f.nombreDimension)||1) * 50;
-  const total  = pNette + acc + taxes + timbre;
-  const apport = pNette * 0.12;
-
+  const majs      = (parseFloat(f.majPermis)||0) + (parseFloat(f.majAge)||0) + (parseFloat(f.majMatieres)||0);
+  const pNette    = pApresRed + majs;
+  const taxes     = (pNette + acc) * 0.19;
+  const timbre    = 150 + (parseInt(f.nombreDimension)||1) * 50;
+  const total     = pNette + acc + taxes + timbre;
+  const apport    = pNette * 0.12;
   return {
-    primeBase:    +primeBase.toFixed(2),
-    options:      +options.toFixed(2),
-    pAvantRed:    +pAvantRed.toFixed(2),
-    reduction:    +reduction.toFixed(2),
-    pApresRed:    +pApresRed.toFixed(2),
-    majs:         +majs.toFixed(2),
-    pNette:       +pNette.toFixed(2),
-    acc:          +acc.toFixed(2),
-    taxes:        +taxes.toFixed(2),
-    timbre:       +timbre.toFixed(2),
-    total:        +total.toFixed(2),
-    apport:       +apport.toFixed(2),
-    gestion:      850,
-    totalComm:    +(apport + 850).toFixed(2)
+    primeBase: +primeBase.toFixed(2), options: +options.toFixed(2),
+    pAvantRed: +pAvantRed.toFixed(2), reduction: +reduction.toFixed(2),
+    pApresRed: +pApresRed.toFixed(2), majs: +majs.toFixed(2),
+    pNette: +pNette.toFixed(2), acc: +acc.toFixed(2),
+    taxes: +taxes.toFixed(2), timbre: +timbre.toFixed(2),
+    total: +total.toFixed(2), apport: +apport.toFixed(2),
+    gestion: 850, totalComm: +(apport + 850).toFixed(2)
   };
 }
 
@@ -114,44 +86,26 @@ const Badge = ({ children, color="slate" }) => {
   return <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${colors[color]}`}>{children}</span>;
 };
 
-const Field = ({ label, value, mono=false }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</span>
-    <span className={`text-xs font-bold text-slate-800 ${mono ? "font-mono" : ""}`}>{value}</span>
-  </div>
-);
-
 const Divider = () => <div className="h-px bg-slate-100 my-4" />;
 
-/* ─── MODAL DEVIS COMPLET ────────────────────────────────────────────────── */
+/* ─── MODAL DEVIS ────────────────────────────────────────────────────────── */
 const ModalDevis = ({ onClose, onEmit }) => {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    // Police
     dateEffet: new Date().toISOString().split("T")[0],
-    duree: "12",
-    fractionnement: "ANNUEL",
-    // Assuré
+    duree: "12", fractionnement: "ANNUEL",
     nomAssure: "", qualite: "M.", typePiece: "CNI", numPiece: "",
     adresse: "", ville: "", profession: "EMPLOYÉ",
     telephone: "", email: "",
-    // Conducteur
     sexe: "H", age: "30", datePermis: "",
-    // Véhicule
     genre: "VP", marque: "", immatriculation: "", dateMEC: "",
-    energie: "ESSENCE", chassis: "", puissance: "",
-    cylindree: "", places: "5",
+    energie: "ESSENCE", chassis: "", puissance: "", cylindree: "", places: "5",
     zone: "01", usage: "USAGE PRIVÉ",
-    // Valeurs
     valeurVenale: "1500000", valeurANeuf: "2500000", valeurAutoRadio: "0",
     capitalAssure: "2500000",
-    // Garanties
     garanties: { rc:true, dr:true, bdg:false, vol:false, inc:false, dc:false, pt:false, ir:false, tc:false },
-    // Majorations
     majPermis: "0", majAge: "0", majMatieres: "0",
-    // Timbres
-    nombreDimension: "1",
-    reduction: "AUCUNE"
+    nombreDimension: "1", reduction: "AUCUNE"
   });
 
   const calc = calculerPrime(form);
@@ -172,8 +126,6 @@ const ModalDevis = ({ onClose, onEmit }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl border border-slate-200 flex flex-col" style={{maxHeight:"92vh"}}>
-
-        {/* Header */}
         <div className="bg-slate-900 px-8 py-5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <div className="bg-orange-500 text-white font-black text-sm px-3 py-1 rounded-lg tracking-widest uppercase">SAA</div>
@@ -185,7 +137,6 @@ const ModalDevis = ({ onClose, onEmit }) => {
           <button onClick={onClose} className="text-slate-400 hover:text-red-400 font-black text-xs uppercase px-4 py-2 rounded-lg hover:bg-white/5 transition-all">ESC Annuler</button>
         </div>
 
-        {/* Stepper */}
         <div className="flex border-b border-slate-200 bg-slate-50 shrink-0">
           {STEPS.map((s, i) => (
             <button key={i} onClick={() => i < step - 1 && setStep(i+1)}
@@ -203,10 +154,7 @@ const ModalDevis = ({ onClose, onEmit }) => {
           ))}
         </div>
 
-        {/* Content */}
         <div className="overflow-y-auto flex-1 px-8 py-6">
-
-          {/* ── ÉTAPE 1 : POLICE & ASSURÉ ── */}
           {step === 1 && (
             <div className="space-y-6">
               <SectionBox title="Couverture">
@@ -216,7 +164,6 @@ const ModalDevis = ({ onClose, onEmit }) => {
                   <ModalSelect label="Fractionnement" name="fractionnement" value={form.fractionnement} onChange={upd} options={["ANNUEL","SEMESTRIEL","TRIMESTRIEL","MENSUEL"]} />
                 </div>
               </SectionBox>
-
               <SectionBox title="Informations Assuré">
                 <div className="grid grid-cols-4 gap-4">
                   <ModalSelect label="Qualité" name="qualite" value={form.qualite} onChange={upd} options={["M.","Mme","Mlle","Sté"]} />
@@ -224,7 +171,7 @@ const ModalDevis = ({ onClose, onEmit }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <ModalSelect label="Type Pièce Identité" name="typePiece" value={form.typePiece} onChange={upd} options={["CNI","PASSEPORT","PERMIS"]} />
-                  <ModalInput  label="N° Pièce" name="numPiece" value={form.numPiece} onChange={upd} />
+                  <ModalInput label="N° Pièce" name="numPiece" value={form.numPiece} onChange={upd} />
                 </div>
                 <div className="grid grid-cols-3 gap-4 mt-4">
                   <div className="col-span-2"><ModalInput label="Adresse" name="adresse" value={form.adresse} onChange={upd} /></div>
@@ -232,13 +179,12 @@ const ModalDevis = ({ onClose, onEmit }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <ModalInput label="Téléphone" name="telephone" value={form.telephone} onChange={upd} type="tel" />
-                  <ModalInput label="Email"     name="email"     value={form.email}     onChange={upd} type="email" />
+                  <ModalInput label="Email" name="email" value={form.email} onChange={upd} type="email" />
                 </div>
               </SectionBox>
             </div>
           )}
 
-          {/* ── ÉTAPE 2 : VÉHICULE & CONDUCTEUR ── */}
           {step === 2 && (
             <div className="space-y-6">
               <SectionBox title="Tarif & Zone">
@@ -251,29 +197,26 @@ const ModalDevis = ({ onClose, onEmit }) => {
                     options={REF_REDUCTIONS.map(r => r.id)} labels={REF_REDUCTIONS.map(r => r.label)} />
                 </div>
               </SectionBox>
-
               <SectionBox title="Identification Véhicule">
                 <div className="grid grid-cols-3 gap-4">
-                  <ModalInput label="Marque"          name="marque"         value={form.marque}         onChange={upd} />
+                  <ModalInput label="Marque" name="marque" value={form.marque} onChange={upd} />
                   <ModalInput label="Immatriculation" name="immatriculation" value={form.immatriculation} onChange={upd} />
-                  <ModalInput label="M.E.C le"        name="dateMEC"        value={form.dateMEC}         onChange={upd} type="date" />
+                  <ModalInput label="M.E.C le" name="dateMEC" value={form.dateMEC} onChange={upd} type="date" />
                 </div>
                 <div className="grid grid-cols-4 gap-4 mt-4">
-                  <ModalSelect label="Énergie"   name="energie"   value={form.energie}   onChange={upd} options={["ESSENCE","DIESEL","GPL","ÉLECTRIQUE"]} />
-                  <ModalInput  label="N° Châssis" name="chassis"  value={form.chassis}   onChange={upd} />
-                  <ModalInput  label="Puissance"  name="puissance" value={form.puissance} onChange={upd} />
-                  <ModalInput  label="Nb Places"  name="places"   value={form.places}    onChange={upd} type="number" />
+                  <ModalSelect label="Énergie" name="energie" value={form.energie} onChange={upd} options={["ESSENCE","DIESEL","GPL","ÉLECTRIQUE"]} />
+                  <ModalInput label="N° Châssis" name="chassis" value={form.chassis} onChange={upd} />
+                  <ModalInput label="Puissance" name="puissance" value={form.puissance} onChange={upd} />
+                  <ModalInput label="Nb Places" name="places" value={form.places} onChange={upd} type="number" />
                 </div>
               </SectionBox>
-
               <SectionBox title="Valeurs du Véhicule">
                 <div className="grid grid-cols-3 gap-4">
-                  <BigValInput label="Valeur Vénale (DZD)"    name="valeurVenale"    value={form.valeurVenale}    onChange={upd} />
-                  <BigValInput label="Valeur à Neuf (DZD)"    name="valeurANeuf"     value={form.valeurANeuf}     onChange={upd} />
+                  <BigValInput label="Valeur Vénale (DZD)" name="valeurVenale" value={form.valeurVenale} onChange={upd} />
+                  <BigValInput label="Valeur à Neuf (DZD)" name="valeurANeuf" value={form.valeurANeuf} onChange={upd} />
                   <BigValInput label="Valeur Auto-Radio (DZD)" name="valeurAutoRadio" value={form.valeurAutoRadio} onChange={upd} />
                 </div>
               </SectionBox>
-
               <SectionBox title="Profil Conducteur Principal">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
@@ -288,13 +231,12 @@ const ModalDevis = ({ onClose, onEmit }) => {
                     </div>
                   </div>
                   <ModalInput label="Âge conducteur" name="age" value={form.age} onChange={upd} type="number" />
-                  <ModalInput label="Date permis"    name="datePermis" value={form.datePermis} onChange={upd} type="date" />
+                  <ModalInput label="Date permis" name="datePermis" value={form.datePermis} onChange={upd} type="date" />
                 </div>
               </SectionBox>
             </div>
           )}
 
-          {/* ── ÉTAPE 3 : GARANTIES ── */}
           {step === 3 && (
             <div className="space-y-4">
               <SectionBox title="Sélection des Garanties">
@@ -323,16 +265,13 @@ const ModalDevis = ({ onClose, onEmit }) => {
                   })}
                 </div>
               </SectionBox>
-
               <SectionBox title="Majorations (DZD)">
                 <div className="grid grid-cols-3 gap-4">
-                  <ModalInput label="Majoration Permis"             name="majPermis"   value={form.majPermis}   onChange={upd} type="number" />
-                  <ModalInput label="Majoration Âge"                name="majAge"      value={form.majAge}      onChange={upd} type="number" />
-                  <ModalInput label="Matières Inflammables"         name="majMatieres" value={form.majMatieres} onChange={upd} type="number" />
+                  <ModalInput label="Majoration Permis" name="majPermis" value={form.majPermis} onChange={upd} type="number" />
+                  <ModalInput label="Majoration Âge" name="majAge" value={form.majAge} onChange={upd} type="number" />
+                  <ModalInput label="Matières Inflammables" name="majMatieres" value={form.majMatieres} onChange={upd} type="number" />
                 </div>
               </SectionBox>
-
-              {/* Aperçu prime en temps réel */}
               <div className="bg-slate-900 rounded-2xl p-5 flex justify-between items-center">
                 <div>
                   <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Aperçu Prime Nette</p>
@@ -346,48 +285,41 @@ const ModalDevis = ({ onClose, onEmit }) => {
             </div>
           )}
 
-          {/* ── ÉTAPE 4 : QUITTANCE ── */}
           {step === 4 && (
             <div className="grid grid-cols-2 gap-6">
-              {/* Décomposition */}
               <div className="space-y-4">
                 <SectionBox title="Tarification">
-                  <CalcLine label="Prime de Base"            val={calc.primeBase} />
+                  <CalcLine label="Prime de Base" val={calc.primeBase} />
                   <CalcLine label="+ Garanties facultatives" val={calc.options} />
-                  <CalcLine label="= Prime avant réduction"  val={calc.pAvantRed} accent />
-                  <CalcLine label="− Réduction commerciale"  val={calc.reduction} neg />
-                  <CalcLine label="= Prime après réduction"  val={calc.pApresRed} />
-                  <CalcLine label="+ Majorations"            val={calc.majs} />
-                  <CalcLine label="Prime Nette (HT)"         val={calc.pNette} bold />
+                  <CalcLine label="= Prime avant réduction" val={calc.pAvantRed} accent />
+                  <CalcLine label="− Réduction commerciale" val={calc.reduction} neg />
+                  <CalcLine label="= Prime après réduction" val={calc.pApresRed} />
+                  <CalcLine label="+ Majorations" val={calc.majs} />
+                  <CalcLine label="Prime Nette (HT)" val={calc.pNette} bold />
                 </SectionBox>
-
                 <SectionBox title="Taxes & Timbres">
-                  <CalcLine label="Accessoires (Auto-radio)"  val={calc.acc} />
+                  <CalcLine label="Accessoires (Auto-radio)" val={calc.acc} />
                   <CalcLine label="Taxes 19% (prime + acc.)" val={calc.taxes} />
-                  <CalcLine label="Timbre + Gradué"          val={calc.timbre} />
+                  <CalcLine label="Timbre + Gradué" val={calc.timbre} />
                 </SectionBox>
-
                 <SectionBox title="Commissions">
                   <CalcLine label="Apport (12%)" val={calc.apport} />
-                  <CalcLine label="Gestion"      val={calc.gestion} />
-                  <CalcLine label="Total Comm."  val={calc.totalComm} bold />
+                  <CalcLine label="Gestion" val={calc.gestion} />
+                  <CalcLine label="Total Comm." val={calc.totalComm} bold />
                 </SectionBox>
               </div>
-
-              {/* Total + actions */}
               <div className="flex flex-col gap-4">
                 <div className="bg-slate-900 rounded-2xl p-8 text-center flex-1 flex flex-col justify-center border-b-4 border-orange-500">
                   <p className="text-orange-400 text-[9px] font-black uppercase tracking-[0.3em] mb-4">Net à Payer (TTC)</p>
                   <p className="text-white text-6xl font-black tabular-nums leading-none">{fmt(calc.total)}</p>
                   <p className="text-slate-400 text-sm font-bold mt-2">DINARS ALGÉRIENS</p>
-
                   <div className="mt-8 space-y-3 text-left bg-white/5 rounded-xl p-4">
                     {[
-                      ["Assuré",       form.nomAssure || "—"],
-                      ["Marque",       form.marque || "—"],
-                      ["Immat.",       form.immatriculation || "—"],
-                      ["Date effet",   form.dateEffet],
-                      ["Zone",         REF_ZONES.find(z=>z.id===form.zone)?.label || "—"]
+                      ["Assuré", form.nomAssure || "—"],
+                      ["Marque", form.marque || "—"],
+                      ["Immat.", form.immatriculation || "—"],
+                      ["Date effet", form.dateEffet],
+                      ["Zone", REF_ZONES.find(z=>z.id===form.zone)?.label || "—"]
                     ].map(([k,v]) => (
                       <div key={k} className="flex justify-between text-[10px]">
                         <span className="text-slate-500 font-bold uppercase">{k}</span>
@@ -396,7 +328,6 @@ const ModalDevis = ({ onClose, onEmit }) => {
                     ))}
                   </div>
                 </div>
-
                 <button onClick={() => { onEmit({ ...form, calc, id:`16/2026/${Math.floor(Math.random()*9000+1000)}` }); onClose(); }}
                   className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-orange-900/20 active:scale-95">
                   Émettre la Police →
@@ -410,7 +341,6 @@ const ModalDevis = ({ onClose, onEmit }) => {
           )}
         </div>
 
-        {/* Footer nav */}
         <div className="px-8 py-5 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
           <button onClick={() => step > 1 ? setStep(step-1) : onClose()}
             className="px-6 py-2.5 text-[10px] font-black uppercase text-slate-500 hover:text-slate-800 transition-all">
@@ -535,36 +465,123 @@ const PoliceCard = ({ police }) => {
 };
 
 /* ─── DASHBOARD PRINCIPAL ────────────────────────────────────────────────── */
-const Dashboard = ({ onLogout }) => {
-  const [devisOpen, setDevisOpen] = useState(false);
-  const [polices, setPolices]     = useState(POLICES);
-  const [activePage, setActivePage] = useState("accueil");
-  const [toast, setToast]         = useState(null);
+const Dashboard = ({ onLogout, onDeclareSinistre }) => {
+  const [devisOpen, setDevisOpen]     = useState(false);
+  const [polices, setPolices]         = useState([]);
+  const [sinistres, setSinistres]     = useState([]);
+  const [activePage, setActivePage]   = useState("accueil");
+  const [toast, setToast]             = useState(null);
+  const [user, setUser]               = useState(null);
+  const [loading, setLoading]         = useState(true);
+
+  /* ── Chargement des données depuis l'API ── */
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) setUser(JSON.parse(savedUser));
+
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        const [devisRes, sinistresRes] = await Promise.all([
+          fetch('http://localhost:3001/api/devis/mes-devis', { headers }),
+          fetch('http://localhost:3001/api/sinistres/mes-sinistres', { headers })
+        ]);
+
+        const devisData     = await devisRes.json();
+        const sinistresData = await sinistresRes.json();
+
+        // ── Protection contre les réponses non-tableau (ex: 401) ──
+        const devisList     = Array.isArray(devisData)     ? devisData     : [];
+        const sinistresList = Array.isArray(sinistresData) ? sinistresData : [];
+
+        const policesFormatted = devisList.map(d => {
+          const contenu = JSON.parse(d.contenu);
+          return {
+            id:        contenu.numPolice || `POL-${d.id}`,
+            marque:    (contenu.marque || 'VÉHICULE').toUpperCase(),
+            immat:     contenu.immatriculation || '—',
+            echeance:  contenu.dateEcheance || '—',
+            statut:    'ACTIF',
+            prime:     parseFloat(contenu.quittance?.primeNette || 0),
+            garanties: Object.entries(contenu.garanties || {})
+                         .filter(([, v]) => v)
+                         .map(([k]) => k.toUpperCase())
+          };
+        });
+
+        const sinistresFormatted = sinistresList.map(s => ({
+          ref:     s.ref,
+          date:    new Date(s.createdAt).toLocaleDateString('fr-DZ'),
+          type:    s.type,
+          lieu:    s.lieu,
+          statut:  s.statut,
+          montant: s.montant
+        }));
+
+        setPolices(policesFormatted);
+        setSinistres(sinistresFormatted);
+      } catch (err) {
+        console.error('Erreur chargement données', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const showToast = (msg, type="success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
 
-  const handleEmit = (data) => {
-    const newPolice = {
-      id:         data.id,
-      marque:     (data.marque || "NOUVEAU VÉHICULE").toUpperCase(),
-      immat:      data.immatriculation || "—",
-      echeance:   (() => {
-        const d = new Date(data.dateEffet);
-        d.setFullYear(d.getFullYear() + parseInt(data.duree||12)/12);
-        return d.toLocaleDateString("fr-DZ");
-      })(),
-      statut:     "ACTIF",
-      prime:      data.calc.pNette,
-      garanties:  Object.entries(data.garanties).filter(([,v])=>v).map(([k])=>k.toUpperCase())
-    };
-    setPolices(p => [newPolice, ...p]);
-    showToast(`Police ${data.id} émise avec succès — ${fmt(data.calc.total)} DZD TTC`);
+  /* ── Émission d'une police depuis la modal ── */
+  const handleEmit = async (data) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:3001/api/devis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ contenu: data })
+      });
+
+      const newPolice = {
+        id:        data.id,
+        marque:    (data.marque || "NOUVEAU VÉHICULE").toUpperCase(),
+        immat:     data.immatriculation || "—",
+        echeance:  (() => {
+          const d = new Date(data.dateEffet);
+          d.setFullYear(d.getFullYear() + parseInt(data.duree||12)/12);
+          return d.toLocaleDateString("fr-DZ");
+        })(),
+        statut:    "ACTIF",
+        prime:     data.calc.pNette,
+        garanties: Object.entries(data.garanties).filter(([,v])=>v).map(([k])=>k.toUpperCase())
+      };
+
+      setPolices(p => [newPolice, ...p]);
+      showToast(`Police ${data.id} émise avec succès — ${fmt(data.calc.total)} DZD TTC`);
+    } catch (err) {
+      showToast('Erreur lors de la sauvegarde', 'error');
+    }
   };
 
   const primesData = [28400, 31000, 34200, 38500, 42120];
+  const userDisplay = user?.fullName || user?.email || '';
+  const userInitial = userDisplay?.[0]?.toUpperCase() || 'U';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-orange-500 p-6 rounded-3xl font-black text-white italic text-3xl animate-bounce shadow-2xl inline-block mb-4">SAA</div>
+          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400 animate-pulse">Chargement de vos données...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -584,7 +601,7 @@ const Dashboard = ({ onLogout }) => {
             <div className="text-white font-black text-2xl tracking-tighter uppercase italic">SAA</div>
             <div className="h-6 w-px bg-white/10" />
             <div className="hidden md:flex gap-1">
-              {[["accueil","Accueil"],["polices","Mes Polices"],["sinistres","Sinistres"]].map(([id,label]) => (
+              {[["accueil","Accueil"],["polices","Mes Polices"],["sinistres","Mes Sinistres"]].map(([id,label]) => (
                 <button key={id} onClick={() => setActivePage(id)}
                   className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                     activePage===id ? "bg-white/10 text-white" : "text-slate-400 hover:text-white hover:bg-white/5"
@@ -594,11 +611,11 @@ const Dashboard = ({ onLogout }) => {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden md:block">
-              <p className="text-white text-[10px] font-black uppercase tracking-widest">{USER.prenom} {USER.nom}</p>
-              <p className="text-orange-400 text-[8px] font-bold">{USER.agence}</p>
+              <p className="text-white text-[10px] font-black uppercase tracking-widest">{userDisplay}</p>
+              <p className="text-orange-400 text-[8px] font-bold">Espace Client SAA</p>
             </div>
             <div className="w-9 h-9 rounded-full bg-orange-500 flex items-center justify-center text-white font-black text-sm">
-              {USER.prenom[0]}{USER.nom[0]}
+              {userInitial}
             </div>
             <button onClick={onLogout}
               className="text-slate-400 hover:text-red-400 text-[9px] font-black uppercase px-3 py-1.5 rounded-lg border border-slate-700 hover:border-red-500 transition-all">
@@ -621,18 +638,18 @@ const Dashboard = ({ onLogout }) => {
                 <div>
                   <p className="text-orange-400 text-[9px] font-black uppercase tracking-[0.3em] mb-2">Espace Client Professionnel</p>
                   <h1 className="text-white text-4xl font-black uppercase italic leading-tight">
-                    Bonjour,<br />{USER.prenom} {USER.nom}
+                    Bonjour,<br />{userDisplay}
                   </h1>
-                  <p className="text-slate-400 text-xs font-bold mt-3 font-mono">{USER.code} • {USER.agence}</p>
+                  <p className="text-slate-400 text-xs font-bold mt-3 font-mono">Espace Client SAA</p>
                 </div>
                 <div className="flex flex-col gap-3">
                   <button onClick={() => setDevisOpen(true)}
                     className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-orange-900/30 active:scale-95">
                     + Nouveau Devis / Police
                   </button>
-                  <button onClick={() => setActivePage("sinistres")}
+                  <button onClick={onDeclareSinistre}
                     className="bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 px-8 py-3 rounded-2xl font-black uppercase text-xs tracking-widest transition-all">
-                    Déclarer un Sinistre
+                    🚨 Déclarer un Sinistre
                   </button>
                 </div>
               </div>
@@ -641,10 +658,10 @@ const Dashboard = ({ onLogout }) => {
             {/* KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label:"Polices Actives",   val: polices.filter(p=>p.statut==="ACTIF").length, unit:"",    color:"orange" },
-                { label:"Prime Totale / An", val: fmt(polices.reduce((a,p)=>a+(p.statut==="ACTIF"?p.prime:0),0)), unit:"DZD", color:"blue" },
-                { label:"Sinistres Ouverts", val: SINISTRES.filter(s=>s.statut==="EN COURS").length, unit:"",   color:"red" },
-                { label:"Points Fidélité",   val: USER.points.toLocaleString(), unit:"pts", color:"green" }
+                { label:"Polices Actives",   val: polices.filter(p=>p.statut==="ACTIF").length,                        unit:"",    color:"orange" },
+                { label:"Prime Totale / An", val: fmt(polices.reduce((a,p)=>a+(p.statut==="ACTIF"?p.prime:0),0)),      unit:"DZD", color:"blue"   },
+                { label:"Sinistres Ouverts", val: sinistres.filter(s=>s.statut==="EN COURS").length,                   unit:"",    color:"red"    },
+                { label:"Points Fidélité",   val: "1 250",                                                              unit:"pts", color:"green"  }
               ].map(k => (
                 <div key={k.label} className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-slate-400 transition-all">
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{k.label}</p>
@@ -661,7 +678,14 @@ const Dashboard = ({ onLogout }) => {
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mes Contrats</p>
                   <button onClick={() => setActivePage("polices")} className="text-[9px] font-black uppercase text-orange-500 hover:text-orange-700">Voir tout →</button>
                 </div>
-                {polices.slice(0,2).map(p => <PoliceCard key={p.id} police={p} />)}
+                {polices.length === 0 ? (
+                  <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center">
+                    <p className="text-slate-400 text-sm font-bold">Aucune police souscrite</p>
+                    <button onClick={() => setDevisOpen(true)} className="mt-3 text-orange-500 font-black text-xs uppercase">+ Créer un devis →</button>
+                  </div>
+                ) : (
+                  polices.slice(0,2).map(p => <PoliceCard key={p.id} police={p} />)
+                )}
               </div>
 
               <div className="space-y-4">
@@ -677,24 +701,37 @@ const Dashboard = ({ onLogout }) => {
                 <div className="bg-white border border-slate-200 rounded-2xl p-5">
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">Programme Fidélité</p>
                   <div className="flex items-end gap-3 mb-3">
-                    <p className="text-4xl font-black text-orange-500">{USER.points.toLocaleString()}</p>
+                    <p className="text-4xl font-black text-orange-500">1 250</p>
                     <p className="text-xs text-slate-500 font-bold mb-1">points</p>
                   </div>
                   <div className="bg-slate-100 rounded-full h-1.5 mb-1 overflow-hidden">
-                    <div className="bg-orange-500 h-full rounded-full" style={{width:`${(USER.points/2000)*100}%`}} />
+                    <div className="bg-orange-500 h-full rounded-full" style={{width:`${(1250/2000)*100}%`}} />
                   </div>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase">{2000-USER.points} pts pour le palier Or</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase">750 pts pour le palier Or</p>
                 </div>
 
                 {/* Dernier sinistre */}
                 <div className="bg-white border border-slate-200 rounded-2xl p-5">
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">Dernier Sinistre</p>
-                  <p className="text-xs font-black text-slate-800">{SINISTRES[0].type}</p>
-                  <p className="text-[9px] font-bold text-slate-400 mt-1">{SINISTRES[0].date}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <Badge color="amber">{SINISTRES[0].statut}</Badge>
-                    <p className="text-xs font-black text-slate-700">{fmt(SINISTRES[0].montant)} DZD</p>
-                  </div>
+                  {sinistres.length > 0 ? (
+                    <>
+                      <p className="text-xs font-black text-slate-800">{sinistres[0].type}</p>
+                      <p className="text-[9px] font-bold text-slate-400 mt-1">{sinistres[0].date}</p>
+                      {sinistres[0].lieu && <p className="text-[9px] font-bold text-slate-400">{sinistres[0].lieu}</p>}
+                      <div className="flex items-center justify-between mt-3">
+                        <Badge color="amber">{sinistres[0].statut}</Badge>
+                        <p className="text-[9px] font-black text-slate-500 font-mono">{sinistres[0].ref}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-4 gap-2">
+                      <p className="text-slate-300 text-2xl">✓</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase text-center">Aucun sinistre déclaré</p>
+                      <button onClick={onDeclareSinistre} className="mt-2 text-[9px] font-black uppercase text-red-400 hover:text-red-600 transition-all">
+                        + Déclarer un sinistre
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -714,41 +751,71 @@ const Dashboard = ({ onLogout }) => {
                 + Nouvelle Police
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {polices.map(p => <PoliceCard key={p.id} police={p} />)}
-            </div>
+            {polices.length === 0 ? (
+              <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-16 flex flex-col items-center justify-center gap-4">
+                <p className="font-black uppercase text-slate-400 text-sm">Aucune police souscrite</p>
+                <button onClick={() => setDevisOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all">
+                  + Créer un devis
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {polices.map(p => <PoliceCard key={p.id} police={p} />)}
+              </div>
+            )}
           </div>
         )}
 
         {/* ── PAGE SINISTRES ── */}
         {activePage === "sinistres" && (
           <div className="space-y-6">
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Gestion des Réclamations</p>
-              <h2 className="text-2xl font-black uppercase text-slate-900 mt-1">Mes Sinistres</h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Gestion des Réclamations</p>
+                <h2 className="text-2xl font-black uppercase text-slate-900 mt-1">Mes Sinistres</h2>
+              </div>
+              <button onClick={onDeclareSinistre}
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all">
+                🚨 Nouveau Sinistre
+              </button>
             </div>
-            <div className="grid gap-4">
-              {SINISTRES.map(s => (
-                <div key={s.ref} className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center justify-between hover:border-slate-400 transition-all">
-                  <div className="flex items-center gap-6">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg ${
-                      s.statut==="EN COURS" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
-                    }`}>⚠</div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-slate-800">{s.type}</p>
-                      <p className="text-[9px] font-bold text-slate-400 font-mono mt-0.5">{s.ref} • {s.date}</p>
+
+            {sinistres.length === 0 ? (
+              <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-16 flex flex-col items-center justify-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-3xl">🛡️</div>
+                <p className="font-black uppercase text-slate-400 text-sm">Aucun sinistre déclaré</p>
+                <button onClick={onDeclareSinistre}
+                  className="mt-2 bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all">
+                  + Déclarer un sinistre
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {sinistres.map(s => (
+                  <div key={s.ref} className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center justify-between hover:border-slate-400 transition-all">
+                    <div className="flex items-center gap-6">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg ${
+                        s.statut==="EN COURS" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
+                      }`}>⚠</div>
+                      <div>
+                        <p className="text-xs font-black uppercase text-slate-800">{s.type}</p>
+                        <p className="text-[9px] font-bold text-slate-400 font-mono mt-0.5">{s.ref} • {s.date}</p>
+                        {s.lieu && <p className="text-[9px] font-bold text-slate-400 mt-0.5">{s.lieu}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-[9px] font-black uppercase text-slate-400">Montant</p>
+                        <p className="text-sm font-black text-slate-900">
+                          {s.montant > 0 ? fmt(s.montant) + " DZD" : "En évaluation"}
+                        </p>
+                      </div>
+                      <Badge color={s.statut==="EN COURS"?"amber":"slate"}>{s.statut}</Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="text-[9px] font-black uppercase text-slate-400">Montant</p>
-                      <p className="text-sm font-black text-slate-900">{fmt(s.montant)} DZD</p>
-                    </div>
-                    <Badge color={s.statut==="EN COURS"?"amber":"slate"}>{s.statut}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
