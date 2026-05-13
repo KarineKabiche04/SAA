@@ -5,5 +5,6 @@ const router = Router()
 
 router.post('/register', register)
 router.post('/login', login)
+// Dans auth.routes.js
 
 export default router
