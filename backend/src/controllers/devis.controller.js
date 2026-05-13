@@ -24,3 +24,14 @@ export const getMyDevis = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' })
   }
 }
+export const getAllDevis = async (req, res) => {
+  try {
+    const devis = await prisma.devis.findMany({
+      include: { user: { select: { email: true, fullName: true } } },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(devis)
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur' })
+  }
+}

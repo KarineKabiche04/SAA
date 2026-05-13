@@ -34,3 +34,31 @@ export const getMySinistres = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' })
   }
 }
+export const getAllSinistres = async (req, res) => {
+  try {
+    const sinistres = await prisma.sinistre.findMany({
+      include: { user: { select: { email: true, fullName: true } } },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(sinistres)
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur' })
+  }
+}
+export const updateSinistre = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { statut, montant, motifRefus, piecesDemandees, commentaire } = req.body;
+    const updated = await prisma.sinistre.update({
+      where: { id: parseInt(id) },
+      data: {
+        statut,
+        montant: parseFloat(montant) || 0,
+        contenu: JSON.stringify({ motifRefus, piecesDemandees, commentaire })
+      }
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+}

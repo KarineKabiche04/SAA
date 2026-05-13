@@ -217,21 +217,39 @@ const ModalSinistre = ({ sinistre, onClose, onUpdate }) => {
     "Carte d'identité nationale",
   ];
 
-  const handleSave = () => {
-    const updated = {
-      ...sinistre,
-      decision,
-      montantRembourse: decision === 'valide' ? montant : 0,
-      motifRefus: decision === 'refuse' ? motifRefus : '',
-      piecesDemandees: decision === 'pieces' ? piecesDemandees : sinistre.piecesDemandees || [],
-      commentaire,
-      statut: decision === 'valide' ? 'VALIDÉ' : decision === 'refuse' ? 'REFUSÉ' : decision === 'pieces' ? 'PIÈCES REQUISES' : 'EN COURS',
-      dateDecision: today(),
-    };
-    onUpdate(updated);
-    setSaved(true);
-    setTimeout(() => { setSaved(false); onClose(); }, 800);
+const handleSave = async () => {
+  const updated = {
+    ...sinistre,
+    decision,
+    montantRembourse: decision === 'valide' ? montant : 0,
+    motifRefus: decision === 'refuse' ? motifRefus : '',
+    piecesDemandees: decision === 'pieces' ? piecesDemandees : [],
+    commentaire,
+    statut: decision === 'valide' ? 'VALIDÉ' : decision === 'refuse' ? 'REFUSÉ' : decision === 'pieces' ? 'PIÈCES REQUISES' : 'EN COURS',
+    dateDecision: today(),
   };
+
+  try {
+    const token = localStorage.getItem('token');
+    await fetch(`http://localhost:3001/api/sinistres/${sinistre.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        statut: updated.statut,
+        montant: parseFloat(updated.montantRembourse) || 0,
+        motifRefus: updated.motifRefus,
+        piecesDemandees: updated.piecesDemandees,
+        commentaire: updated.commentaire,
+      })
+    });
+  } catch (err) {
+    console.error('Erreur sauvegarde décision', err);
+  }
+
+  onUpdate(updated);
+  setSaved(true);
+  setTimeout(() => { setSaved(false); onClose(); }, 800);
+};
 
   const addPiece = () => {
     const p = nouvellePiece.trim();

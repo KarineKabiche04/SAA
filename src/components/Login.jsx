@@ -40,7 +40,7 @@ const Login = ({ initialMode = 'login', onSignupSuccess, onLoginSuccess }) => {
         if (!res.ok) return alert(data.message);
         alert('Compte créé avec succès ! Connectez-vous.');
         setIsLoginMode(true);
-        if (onSignupSuccess) onSignupSuccess({ email });
+        if (onSignupSuccess) onSignupSuccess({ email, fullName });
       } catch (err) {
         alert('Erreur de connexion au serveur');
       }

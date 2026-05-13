@@ -78,6 +78,24 @@ const [user, setUser] = useState(() => {
     const t = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(t);
   }, [isLoading]);
+  useEffect(() => {
+  if (!user || !isAdmin(user)) return;
+  const token = localStorage.getItem('token');
+  fetch('http://localhost:3001/api/sinistres/all', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+    .then(r => r.json())
+    .then(data => { if (Array.isArray(data)) setSinistresList(data); })
+    .catch(console.error);
+
+  fetch('http://localhost:3001/api/devis/all', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+    .then(r => r.json())
+    .then(data => { if (Array.isArray(data)) setDossiersList(data.map(d => JSON.parse(d.contenu))); })
+    .catch(console.error);
+
+}, [user]);
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
   const navigate = (view) => {
@@ -94,11 +112,11 @@ const [user, setUser] = useState(() => {
     setCurrentView(VIEWS.AUTH);
   };
 
-  const handleAuthSuccess = (userData) => {
-    setUser(userData);
-    navigate(isAdmin(userData) ? VIEWS.ADMIN_DASHBOARD : VIEWS.DASHBOARD);
-  };
-
+const handleAuthSuccess = (userData) => {
+  setUser(userData)
+  localStorage.setItem('user', JSON.stringify(userData))
+  navigate(isAdmin(userData) ? VIEWS.ADMIN_DASHBOARD : VIEWS.DASHBOARD)
+}
   const handleAuthModalSuccess = async (userData) => {
   setUser(userData)
   setShowAuthModal(false)
