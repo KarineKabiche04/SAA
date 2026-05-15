@@ -17,6 +17,7 @@ model User {
   devis     Devis[]
   sinistres Sinistre[]
   vehicules Vehicule[]
+  conversations Conversation[]
 }
 
 model Vehicule {
@@ -62,4 +63,34 @@ model Product {
   prix        Float
   image       String?
   createdAt   DateTime @default(now())
+}
+model DemandeCompte {
+  id             Int      @id @default(autoincrement())
+  nom            String
+  email          String
+  telephone      String
+  marque         String
+  immatriculation String
+  wilaya         String
+  message        String?
+  statut         String   @default("EN ATTENTE")
+  createdAt      DateTime @default(now())
+}
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  conversationId Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  contenu        String
+  expediteur     String       @default("client")
+  lu             Boolean      @default(false)
+  createdAt      DateTime     @default(now())
 }

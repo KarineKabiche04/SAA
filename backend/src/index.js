@@ -5,6 +5,9 @@ import authRoutes from './routes/auth.routes.js'
 import devisRoutes from './routes/devis.routes.js'
 import sinistreRoutes from './routes/sinistre.routes.js'
 import vehiculeRoutes from './routes/vehicule.routes.js'
+import demandeRoutes from './routes/demande.routes.js'
+import messageRoutes from './routes/message.routes.js'
+
 
 dotenv.config()
 
@@ -17,6 +20,8 @@ app.use('/api/auth', authRoutes)
 app.use('/api/devis', devisRoutes)
 app.use('/api/sinistres', sinistreRoutes)
 app.use('/api/vehicules', vehiculeRoutes)
+app.use('/api/demandes', demandeRoutes)
+app.use('/api/messages', messageRoutes)
 
 app.get('/', (req, res) => {
   res.json({ message: 'API en marche 🚀' })

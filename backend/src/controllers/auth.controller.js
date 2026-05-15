@@ -4,16 +4,30 @@ import prisma from '../prisma.js'
 
 export const register = async (req, res) => {
   try {
-    console.log('BODY REÇU:', req.body) // ← ajoute ça
-    const { email, password, fullName } = req.body
+    const { email, password, fullName, numPolice } = req.body
+    
+    // Vérifier si le N° de police existe dans la table Vehicule
+    if (numPolice) {
+      const police = await prisma.vehicule.findFirst({
+        where: { id: parseInt(numPolice) }
+      })
+      if (!police) {
+        return res.status(400).json({ 
+          message: 'Police introuvable. Vérifiez votre N° ou contactez votre agence SAA.' 
+        })
+      }
+    }
+
     const existe = await prisma.user.findUnique({ where: { email } })
     if (existe) return res.status(400).json({ message: 'Email déjà utilisé' })
+    
     const hash = await bcrypt.hash(password, 10)
-    const user = await prisma.user.create({ data: { email, password: hash, fullName } })
+    const user = await prisma.user.create({ 
+      data: { email, password: hash, fullName } 
+    })
     res.status(201).json({ message: 'Compte créé avec succès' })
   } catch (err) {
-    console.error('ERREUR REGISTER:', err) // ← et ça
-    res.status(500).json({ message: err.message })
+    res.status(500).json({ message: 'Erreur serveur' })
   }
 }
 
