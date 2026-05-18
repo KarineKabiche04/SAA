@@ -1,25 +1,7 @@
 import React, { useState } from 'react';
 
-// ─── WILAYAS ─────────────────────────────────────────────────────────────────
-const WILAYAS = [
-  "01-Adrar","02-Chlef","03-Laghouat","04-Oum El Bouaghi","05-Batna","06-Béjaïa",
-  "07-Biskra","08-Béchar","09-Blida","10-Bouira","11-Tamanrasset","12-Tébessa",
-  "13-Tlemcen","14-Tiaret","15-Tizi Ouzou","16-Alger","17-Djelfa","18-Jijel",
-  "19-Sétif","20-Saïda","21-Skikda","22-Sidi Bel Abbès","23-Annaba","24-Guelma",
-  "25-Constantine","26-Médéa","27-Mostaganem","28-M'Sila","29-Mascara","30-Ouargla",
-  "31-Oran","32-El Bayadh","33-Illizi","34-Bordj Bou Arreridj","35-Boumerdès",
-  "36-El Tarf","37-Tindouf","38-Tissemsilt","39-El Oued","40-Khenchela",
-  "41-Souk Ahras","42-Tipaza","43-Mila","44-Aïn Defla","45-Naâma",
-  "46-Aïn Témouchent","47-Ghardaïa","48-Relizane","49-El M'Ghair","50-El Meniaa",
-  "51-Ouled Djellal","52-Bordj Baji Mokhtar","53-Béni Abbès","54-Timimoun",
-  "55-Touggourt","56-Djanet","57-In Salah","58-In Guezzam",
-];
-
-// ─── MODES ───────────────────────────────────────────────────────────────────
-// 'login'    → Se connecter
-// 'register' → J'ai déjà une police SAA
-// 'demande'  → Je veux m'assurer (nouveau client)
-
+// ─── LOGIN PRINCIPAL ──────────────────────────────────────────────────────────
+// modes: 'login' | 'register'
 const Login = ({ initialMode = 'login', onSignupSuccess, onLoginSuccess }) => {
   const [mode, setMode] = useState(initialMode);
 
@@ -33,22 +15,12 @@ const Login = ({ initialMode = 'login', onSignupSuccess, onLoginSuccess }) => {
   const [regPassword, setRegPassword]   = useState('');
   const [regNumPolice, setRegNumPolice] = useState('');
 
-  // Champs demande (nouveau client)
-  const [dNom, setDNom]                   = useState('');
-  const [dEmail, setDEmail]               = useState('');
-  const [dTel, setDTel]                   = useState('');
-  const [dMarque, setDMarque]             = useState('');
-  const [dImmat, setDImmat]               = useState('');
-  const [dWilaya, setDWilaya]             = useState('16-Alger');
-  const [dMessage, setDMessage]           = useState('');
-
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
-  const [success, setSuccess]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
+  const [success, setSuccess] = useState('');
 
   const reset = () => { setError(''); setSuccess(''); };
 
-  // ── CONNEXION ──────────────────────────────────────────────────────────────
   const handleLogin = async (e) => {
     e.preventDefault(); reset(); setLoading(true);
     try {
@@ -66,7 +38,6 @@ const Login = ({ initialMode = 'login', onSignupSuccess, onLoginSuccess }) => {
     finally { setLoading(false); }
   };
 
-  // ── INSCRIPTION (assuré existant avec N° police) ───────────────────────────
   const handleRegister = async (e) => {
     e.preventDefault(); reset(); setLoading(true);
     try {
@@ -89,217 +60,134 @@ const Login = ({ initialMode = 'login', onSignupSuccess, onLoginSuccess }) => {
     finally { setLoading(false); }
   };
 
-  // ── DEMANDE NOUVEAU CLIENT ─────────────────────────────────────────────────
-  const handleDemande = async (e) => {
-    e.preventDefault(); reset(); setLoading(true);
-    try {
-      const res  = await fetch('http://localhost:3001/api/demandes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nom: dNom, email: dEmail, telephone: dTel,
-          marque: dMarque, immatriculation: dImmat,
-          wilaya: dWilaya, message: dMessage
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.message); return; }
-      setSuccess('✅ Demande envoyée ! Un agent SAA vous contactera bientôt.');
-      setDNom(''); setDEmail(''); setDTel(''); setDMarque(''); setDImmat(''); setDMessage('');
-    } catch { setError('Erreur de connexion au serveur'); }
-    finally { setLoading(false); }
-  };
-
-  // ── HEADER couleurs par mode ───────────────────────────────────────────────
-  const headerBg = mode === 'login' ? 'bg-[#0f172a]' : mode === 'register' ? 'bg-[#e89d1b]' : 'bg-emerald-600';
-  const headerTitle = mode === 'login' ? 'Espace Client' : mode === 'register' ? 'Créer mon compte' : 'Nouvelle Demande';
-  const logoColor = mode === 'login' ? 'text-[#e89d1b]' : 'text-white';
-  const logoSub   = mode === 'login' ? 'text-white' : 'text-slate-900';
+  const headerBg    = mode === 'login' ? 'bg-[#0f172a]' : 'bg-[#e89d1b]';
+  const headerTitle = mode === 'login' ? 'Espace Client' : 'Créer mon compte';
+  const logoColor   = mode === 'login' ? 'text-[#e89d1b]' : 'text-white';
+  const logoSub     = mode === 'login' ? 'text-white' : 'text-slate-900';
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 font-sans">
-      <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+      <div className="max-w-md w-full">
 
-        {/* ── HEADER ── */}
-        <div className={`p-10 text-center relative ${headerBg}`}>
-          <div className="inline-flex flex-col items-center leading-none mb-4">
-            <span className={`text-5xl font-black italic tracking-tighter uppercase ${logoColor}`}>saa</span>
-            <span className={`text-[10px] font-black uppercase tracking-[0.4em] mt-2 ${logoSub}`}>Assurances</span>
+        <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+
+          {/* Header */}
+          <div className={`p-10 text-center relative ${headerBg}`}>
+            <div className="inline-flex flex-col items-center leading-none mb-4">
+              <span className={`text-5xl font-black italic tracking-tighter uppercase ${logoColor}`}>saa</span>
+              <span className={`text-[10px] font-black uppercase tracking-[0.4em] mt-2 ${logoSub}`}>Assurances</span>
+            </div>
+            <h2 className="text-white text-xl font-black uppercase tracking-tight italic">{headerTitle}</h2>
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-black/10" />
           </div>
-          <h2 className="text-white text-xl font-black uppercase tracking-tight italic">{headerTitle}</h2>
-          <div className="absolute bottom-0 left-0 w-full h-1 bg-black/10" />
-        </div>
 
-        {/* ── TABS ── */}
-        <div className="flex border-b border-slate-100">
-          {[
-            { key:'login',    label:'Se connecter' },
-            { key:'register', label:'Déjà assuré SAA' },
-            { key:'demande',  label:'Nouveau client' },
-          ].map(t => (
-            <button key={t.key} onClick={() => { setMode(t.key); reset(); }}
-              className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 ${
-                mode === t.key
-                  ? t.key === 'login'    ? 'border-[#0f172a] text-[#0f172a]'
-                  : t.key === 'register' ? 'border-[#e89d1b] text-[#e89d1b]'
-                  :                        'border-emerald-600 text-emerald-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-8">
-
-          {/* ── Messages ── */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mb-5">
-              <p className="text-red-500 text-[11px] font-bold">⚠ {error}</p>
-            </div>
-          )}
-          {success && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 mb-5">
-              <p className="text-emerald-600 text-[11px] font-bold">{success}</p>
-            </div>
-          )}
-
-          {/* ══ MODE : SE CONNECTER ══ */}
-          {mode === 'login' && (
-            <form className="space-y-5" onSubmit={handleLogin}>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">E-mail</label>
-                <input required type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="votre@email.dz"
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#0f172a] focus:bg-white outline-none transition-all" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mot de passe</label>
-                <input required type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#0f172a] focus:bg-white outline-none transition-all" />
-              </div>
-              <button type="submit" disabled={loading}
-                className="w-full py-4 bg-[#0f172a] hover:bg-slate-800 disabled:opacity-50 text-white font-black text-[11px] uppercase tracking-[0.25em] rounded-2xl transition-all active:scale-95 shadow-xl">
-                {loading ? '⏳ Connexion...' : 'Se Connecter 🔒'}
+          {/* Tabs */}
+          <div className="flex border-b border-slate-100">
+            {[
+              { key: 'login',    label: 'Se connecter' },
+              { key: 'register', label: 'Déjà assuré SAA' },
+            ].map(t => (
+              <button key={t.key} onClick={() => { setMode(t.key); reset(); }}
+                className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 ${
+                  mode === t.key
+                    ? t.key === 'login'
+                      ? 'border-[#0f172a] text-[#0f172a]'
+                      : 'border-[#e89d1b] text-[#e89d1b]'
+                    : 'border-transparent text-slate-400 hover:text-slate-600'
+                }`}>
+                {t.label}
               </button>
-              <button type="button" className="w-full text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:text-slate-500 transition-all">
-                Mot de passe oublié ?
-              </button>
-            </form>
-          )}
+            ))}
+          </div>
 
-          {/* ══ MODE : DÉJÀ ASSURÉ SAA ══ */}
-          {mode === 'register' && (
-            <form className="space-y-4" onSubmit={handleRegister}>
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-2">
-                <p className="text-amber-700 text-[10px] font-bold leading-relaxed">
-                  📋 Vous avez déjà une police d'assurance SAA ? Créez votre espace client en renseignant votre N° de police.
-                </p>
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Nom & Prénom</label>
-                <input required type="text" value={regFullName} onChange={e => setRegFullName(e.target.value)}
-                  placeholder="Votre nom complet"
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#e89d1b] focus:bg-white outline-none transition-all" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">E-mail</label>
-                <input required type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)}
-                  placeholder="votre@email.dz"
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#e89d1b] focus:bg-white outline-none transition-all" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mot de passe</label>
-                <input required type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)}
-                  placeholder="Choisissez un mot de passe"
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#e89d1b] focus:bg-white outline-none transition-all" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">N° de Police SAA</label>
-                <input required type="text" value={regNumPolice} onChange={e => setRegNumPolice(e.target.value)}
-                  placeholder="ex: 16/2026/1234"
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold font-mono focus:border-[#e89d1b] focus:bg-white outline-none transition-all" />
-                <p className="text-[9px] text-slate-400 font-bold mt-1 ml-1">Indiqué sur votre attestation d'assurance</p>
-              </div>
-              <button type="submit" disabled={loading}
-                className="w-full py-4 bg-[#e89d1b] hover:bg-orange-600 disabled:opacity-50 text-white font-black text-[11px] uppercase tracking-[0.25em] rounded-2xl transition-all active:scale-95 shadow-xl shadow-orange-100">
-                {loading ? '⏳ Vérification...' : 'Créer mon Espace Client →'}
-              </button>
-            </form>
-          )}
+          <div className="p-8">
 
-          {/* ══ MODE : NOUVEAU CLIENT ══ */}
-          {mode === 'demande' && (
-            <form className="space-y-4" onSubmit={handleDemande}>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 mb-2">
-                <p className="text-emerald-700 text-[10px] font-bold leading-relaxed">
-                  🚗 Vous souhaitez assurer votre véhicule ? Remplissez ce formulaire et un agent SAA vous contactera pour établir votre police.
-                </p>
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mb-5">
+                <p className="text-red-500 text-[11px] font-bold">⚠ {error}</p>
               </div>
+            )}
+            {success && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 mb-5">
+                <p className="text-emerald-600 text-[11px] font-bold">{success}</p>
+              </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
+            {/* ── SE CONNECTER ── */}
+            {mode === 'login' && (
+              <form className="space-y-5" onSubmit={handleLogin}>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">E-mail</label>
+                  <input required type="email" value={email} onChange={e => setEmail(e.target.value)}
+                    placeholder="votre@email.dz"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#0f172a] focus:bg-white outline-none transition-all" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mot de passe</label>
+                  <input required type="password" value={password} onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#0f172a] focus:bg-white outline-none transition-all" />
+                </div>
+                <button type="submit" disabled={loading}
+                  className="w-full py-4 bg-[#0f172a] hover:bg-slate-800 disabled:opacity-50 text-white font-black text-[11px] uppercase tracking-[0.25em] rounded-2xl transition-all active:scale-95 shadow-xl">
+                  {loading ? '⏳ Connexion...' : 'Se Connecter 🔒'}
+                </button>
+                <button type="button" className="w-full text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:text-slate-500 transition-all">
+                  Mot de passe oublié ?
+                </button>
+              </form>
+            )}
+
+            {/* ── DÉJÀ ASSURÉ SAA ── */}
+            {mode === 'register' && (
+              <form className="space-y-4" onSubmit={handleRegister}>
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-2">
+                  <p className="text-amber-700 text-[10px] font-bold leading-relaxed">
+                    📋 Vous avez déjà une police d'assurance SAA ? Créez votre espace client en renseignant votre N° de police.
+                  </p>
+                </div>
+                <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Nom & Prénom</label>
-                  <input required type="text" value={dNom} onChange={e => setDNom(e.target.value)}
+                  <input required type="text" value={regFullName} onChange={e => setRegFullName(e.target.value)}
                     placeholder="Votre nom complet"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all" />
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#e89d1b] focus:bg-white outline-none transition-all" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">E-mail</label>
-                  <input required type="email" value={dEmail} onChange={e => setDEmail(e.target.value)}
+                  <input required type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)}
                     placeholder="votre@email.dz"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all" />
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#e89d1b] focus:bg-white outline-none transition-all" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Téléphone</label>
-                  <input required type="tel" value={dTel} onChange={e => setDTel(e.target.value)}
-                    placeholder="0X XX XX XX XX"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all" />
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mot de passe</label>
+                  <input required type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)}
+                    placeholder="Choisissez un mot de passe"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:border-[#e89d1b] focus:bg-white outline-none transition-all" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Marque véhicule</label>
-                  <input required type="text" value={dMarque} onChange={e => setDMarque(e.target.value)}
-                    placeholder="ex: Toyota"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all" />
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">N° de Police SAA</label>
+                  <input required type="text" value={regNumPolice} onChange={e => setRegNumPolice(e.target.value)}
+                    placeholder="ex: 16/2026/1234"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold font-mono focus:border-[#e89d1b] focus:bg-white outline-none transition-all" />
+                  <p className="text-[9px] text-slate-400 font-bold mt-1 ml-1">Indiqué sur votre attestation d'assurance</p>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Immatriculation</label>
-                  <input required type="text" value={dImmat} onChange={e => setDImmat(e.target.value)}
-                    placeholder="ex: 12345-16-25"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Wilaya</label>
-                  <select value={dWilaya} onChange={e => setDWilaya(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all cursor-pointer">
-                    {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Message (optionnel)</label>
-                  <textarea value={dMessage} onChange={e => setDMessage(e.target.value)}
-                    placeholder="Informations complémentaires, questions..."
-                    rows={3}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none" />
-                </div>
-              </div>
+                <button type="submit" disabled={loading}
+                  className="w-full py-4 bg-[#e89d1b] hover:bg-orange-600 disabled:opacity-50 text-white font-black text-[11px] uppercase tracking-[0.25em] rounded-2xl transition-all active:scale-95 shadow-xl shadow-orange-100">
+                  {loading ? '⏳ Vérification...' : 'Créer mon Espace Client →'}
+                </button>
+              </form>
+            )}
 
-              <button type="submit" disabled={loading}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-[11px] uppercase tracking-[0.25em] rounded-2xl transition-all active:scale-95 shadow-xl shadow-emerald-100">
-                {loading ? '⏳ Envoi en cours...' : '📤 Soumettre ma Demande'}
-              </button>
-            </form>
-          )}
+          </div>
 
+          {/* Footer */}
+          <div className="bg-slate-50 p-4 text-center">
+            <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">
+              Sécurité Garantie par SAA Système SI
+            </p>
+          </div>
         </div>
 
-        {/* ── FOOTER ── */}
-        <div className="bg-slate-50 p-4 text-center">
-          <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">
-            Sécurité Garantie par SAA Système SI
-          </p>
-        </div>
       </div>
     </div>
   );

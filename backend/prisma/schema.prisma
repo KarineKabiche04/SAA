@@ -7,90 +7,391 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int        @id @default(autoincrement())
-  email     String     @unique
-  password  String
-  fullName  String?
-  role      String     @default("user")
-  createdAt DateTime   @default(now())
-  devis     Devis[]
-  sinistres Sinistre[]
-  vehicules Vehicule[]
-  conversations Conversation[]
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  AGENT
+  CLIENT
 }
+
+enum StatutVehicule {
+  ACTIF
+  EXPIRE
+  SUSPENDU
+}
+
+enum StatutSinistre {
+  EN_COURS
+  TRAITE
+  REFUSE
+}
+
+enum StatutDevis {
+  EN_ATTENTE
+  ACCEPTE
+  REFUSE
+}
+
+enum StatutDemande {
+  EN_ATTENTE
+  VALIDEE
+  REFUSEE
+}
+
+
+enum StatutPolice {
+  BROUILLON
+  EMISE
+  PAYEE      // ← AJOUTE
+  EXPIREE
+  RESILIEE
+  SUSPENDUE
+}
+
+
+enum Fractionnement {
+  ANNUEL
+  SEMESTRIEL
+  TRIMESTRIEL
+  MENSUEL
+}
+
+enum Sexe {
+  H
+  F
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORGANIZATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Organization {
+  id        Int      @id @default(autoincrement())
+  nom       String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  users         User[]
+  vehicules     Vehicule[]
+  devis         Devis[]
+  sinistres     Sinistre[]
+  conversations Conversation[]
+  polices       Police[]
+
+  @@map("organizations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  password String
+  fullName String?
+  role     UserRole @default(CLIENT)
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vehicules     Vehicule[]
+  devis         Devis[]
+  sinistres     Sinistre[]
+  messages      Message[]
+  conversations Conversation[]
+  polices       Police[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VEHICULE
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Vehicule {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  user          User     @relation(fields: [userId], references: [id])
-  marque        String
-  immatriculation String
-  energie       String   @default("ESSENCE")
-  dateEcheance  DateTime
-  statut        String   @default("ACTIF")
-  garanties     String   @default("RC,DR")
-  prime         Float    @default(0)
-  createdAt     DateTime @default(now())
+  id Int @id @default(autoincrement())
+
+  // nullable : l'agent crée le véhicule avant que le client ait un compte.
+  // Renseigné automatiquement quand le client s'inscrit avec son N° de police.
+  // SetNull : si le compte client est supprimé, le véhicule reste intact.
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  marque          String
+  immatriculation String @unique
+  energie         String @default("ESSENCE")
+
+  dateEcheance DateTime
+
+  statut StatutVehicule @default(ACTIF)
+
+  garanties String @default("RC,DR")
+  prime     Float  @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  polices Police[]
+
+  @@map("vehicules")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEVIS
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Devis {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  contenu   String
-  statut    String   @default("en attente")
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  contenu String
+
+  statut StatutDevis @default(EN_ATTENTE)
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("devis")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SINISTRE
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Sinistre {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  ref       String
-  type      String
-  lieu      String?
-  statut    String   @default("EN COURS")
-  montant   Float    @default(0)
-  contenu   String
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  policeId Int?
+  police   Police? @relation(fields: [policeId], references: [id])
+
+  ref String @unique
+
+  type String
+  lieu String?
+
+  statut StatutSinistre @default(EN_COURS)
+
+  montant Float @default(0)
+
+  contenu String
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sinistres")
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCT
+// ─────────────────────────────────────────────────────────────────────────────
+
 model Product {
-  id          Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   nom         String
   description String
-  prix        Float
-  image       String?
-  createdAt   DateTime @default(now())
+
+  prix Float
+
+  image String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("products")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEMANDE COMPTE
+// ─────────────────────────────────────────────────────────────────────────────
+
 model DemandeCompte {
-  id             Int      @id @default(autoincrement())
-  nom            String
-  email          String
-  telephone      String
-  marque         String
+  id Int @id @default(autoincrement())
+
+  nom       String
+  email     String
+  telephone String
+
+  marque String
+
   immatriculation String
-  wilaya         String
-  message        String?
-  statut         String   @default("EN ATTENTE")
-  createdAt      DateTime @default(now())
+
+  wilaya String
+
+  message String?
+
+  statut StatutDemande @default(EN_ATTENTE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("demandes_comptes")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONVERSATION / MESSAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
 model Conversation {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id])
-  messages  Message[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("conversations")
 }
 
 model Message {
-  id             Int          @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   conversationId Int
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
-  contenu        String
-  expediteur     String       @default("client")
-  lu             Boolean      @default(false)
-  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id])
+
+  contenu String
+
+  expediteur String @default("client")
+
+  lu Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@map("messages")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POLICE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Police {
+  id Int @id @default(autoincrement())
+
+  numeroPolice   String  @unique
+  numeroAvenant  String?
+  numeroGarantie String?
+
+  statut StatutPolice @default(BROUILLON)
+
+  // nullable : la police est créée par l'AGENT, le client n'a pas encore de compte.
+  // Flux : Agent crée la police → userId = null
+  //        Client s'inscrit avec N° de police → userId rattaché ici
+  // SetNull : si le compte client est supprimé, la police reste (document légal).
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  vehiculeId Int
+  vehicule   Vehicule @relation(fields: [vehiculeId], references: [id])
+
+  // ───── DOSSIER / AGENCE ─────
+  agence         String?
+  convention     String?
+  sousConvention String?
+  refDossier     String?
+
+  // ───── DATES CONTRAT ─────
+  dateEffet    DateTime
+  heureEffet   String?
+  dateEcheance DateTime
+  duree        Int?
+
+  souscritLe DateTime?
+  saisiLe    DateTime?
+
+  fractionnement Fractionnement @default(ANNUEL)
+
+  contratFerme Boolean @default(false)
+
+  // ───── TARIFICATION ─────
+  tarif       String?
+  typeContrat String?
+  type        String?
+
+  reduction String?
+  regime    String?
+
+  montantTotal Float @default(0)
+  primeNette   Float @default(0)
+  taxes        Float @default(0)
+
+  // ───── ASSURÉ ─────
+  nomAssure  String?
+  codeAssure String?
+  qualite    String?
+
+  typePiece        String?
+  numPieceIdentite String?
+
+  adresse String?
+  ville   String?
+  wilaya  String?
+
+  profession String?
+  activite   String?
+
+  telephone String?
+  email     String?
+
+  // ───── CONDUCTEUR ─────
+  conducteurNom String?
+  conducteurAge Int?
+  sexe          Sexe?
+  datePermis    DateTime?
+
+  // ───── VÉHICULE / USAGE ─────
+  genreVehicule String?
+  usage         String?
+
+  // ───── DIMENSIONS / TIMBRES ─────
+  typeDimension   String?
+  nombreDimension Int?    @default(1)
+  exoneration     String?
+
+  // ───── RELATIONS ─────
+  sinistres Sinistre[]
+
+  // ───── META ─────
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([numeroPolice])
+  @@index([dateEcheance])
+  @@index([statut])
+  @@index([userId])
+  @@map("polices")
 }

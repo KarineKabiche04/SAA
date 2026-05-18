@@ -1,177 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-import LoginAgent from './components/LoginAgent';
+import LoginAgent     from './components/LoginAgent';
 import DashboardAgent from './components/DashboardAgent';
 import DashboardAdmin from './components/DashboardAdmin';
 
-function App() {
+export default function App() {
 
-  // ─────────────────────────────────────────────
-  // SESSION UTILISATEUR
-  // ─────────────────────────────────────────────
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem('agent_user')) || null
-  );
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('user')); }
+    catch { return null; }
+  });
 
-  // ─────────────────────────────────────────────
-  // LOADING SCREEN
-  // ─────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
 
-  // ─────────────────────────────────────────────
-  // DATA
-  // ─────────────────────────────────────────────
-  const [dossiers, setDossiers] = useState([]);
-  const [sinistres, setSinistres] = useState([]);
-  const [users, setUsers] = useState([]);
-
-  // ─────────────────────────────────────────────
-  // CHARGEMENT DES DONNÉES
-  // ─────────────────────────────────────────────
-  useEffect(() => {
-
-    if (!user) return;
-
-    const token = localStorage.getItem('agent_token');
-
-    // ───── Tous les devis ─────
-    fetch('http://localhost:3001/api/devis/all', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setDossiers(data);
-        }
-      })
-      .catch(console.error);
-
-    // ───── Tous les sinistres ─────
-    fetch('http://localhost:3001/api/sinistres/all', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setSinistres(data);
-        }
-      })
-      .catch(console.error);
-
-    // ───── Tous les utilisateurs (ADMIN seulement) ─────
-    if (user.role === 'admin') {
-
-      fetch('http://localhost:3001/api/users/all', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            setUsers(data);
-          }
-        })
-        .catch(console.error);
-    }
-
-  }, [user]);
-
-  // ─────────────────────────────────────────────
-  // LOGIN SUCCESS
-  // ─────────────────────────────────────────────
+  // ─── Login ────────────────────────────────────────────────────────────────
   const handleLoginSuccess = (userData) => {
-
     setLoading(true);
-
     setTimeout(() => {
-
       setUser(userData);
-
-      localStorage.setItem(
-        'agent_user',
-        JSON.stringify(userData)
-      );
-
+      localStorage.setItem('user', JSON.stringify(userData));
       setLoading(false);
-
     }, 1200);
   };
 
-  // ─────────────────────────────────────────────
-  // LOGOUT
-  // ─────────────────────────────────────────────
+  // ─── Logout ───────────────────────────────────────────────────────────────
   const handleLogout = () => {
-
-    localStorage.removeItem('agent_token');
-    localStorage.removeItem('agent_user');
-
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
   };
 
-  // ─────────────────────────────────────────────
-  // LOADER
-  // ─────────────────────────────────────────────
+  // ─── Loader ───────────────────────────────────────────────────────────────
   if (loading) {
-
     return (
       <div className="min-h-screen bg-[#0b1120] flex flex-col items-center justify-center">
-
         <div className="bg-orange-500 p-6 rounded-[2rem] font-black text-white italic text-3xl animate-bounce shadow-2xl">
           SAA
         </div>
-
         <p className="mt-8 text-[10px] font-black uppercase tracking-[0.5em] text-slate-500 animate-pulse">
           Initialisation du portail sécurisé...
         </p>
-
       </div>
     );
   }
 
-  // ─────────────────────────────────────────────
-  // LOGIN SCREEN
-  // ─────────────────────────────────────────────
+  // ─── Login screen ─────────────────────────────────────────────────────────
   if (!user) {
-
-    return (
-      <LoginAgent
-        onLoginSuccess={handleLoginSuccess}
-      />
-    );
+    return <LoginAgent onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // ─────────────────────────────────────────────
-  // DASHBOARD ADMIN
-  // ─────────────────────────────────────────────
-  if (user.role === 'admin') {
-
-    return (
-      <DashboardAdmin
-        user={user}
-        dossiers={dossiers}
-        sinistres={sinistres}
-        users={users}
-        onLogout={handleLogout}
-      />
-    );
+  // ─── Admin ────────────────────────────────────────────────────────────────
+  // DashboardAdmin gère ses propres fetch (users, stats, polices, sinistres)
+  if (user.role === 'ADMIN' || user.role === 'admin') {
+    return <DashboardAdmin user={user} onLogout={handleLogout} />;
   }
 
-  // ─────────────────────────────────────────────
-  // DASHBOARD AGENT
-  // ─────────────────────────────────────────────
-  return (
-    <DashboardAgent
-      user={user}
-      dossiers={dossiers}
-      sinistres={sinistres}
-      onLogout={handleLogout}
-    />
-  );
+  // ─── Agent ────────────────────────────────────────────────────────────────
+  // DashboardAgent gère ses propres fetch (demandes, sinistres, polices, messagerie)
+  return <DashboardAgent onLogout={handleLogout} />;
 }
-
-export default App;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 // ═══════════════════════════════════════════════════════════════
-// RÉFÉRENTIELS — hors composant pour éviter les recréations
+// RÉFÉRENTIELS
 // ═══════════════════════════════════════════════════════════════
 const REF = {
   wilayas: [
@@ -18,59 +18,51 @@ const REF = {
     "55-Touggourt","56-Djanet","57-In Salah","58-In Guezzam",
   ],
   zones: [
-    { id:"01", label:"ZONE 01 - NORD",  coef:1.00 },
-    { id:"02", label:"ZONE 02 - EST",   coef:0.95 },
-    { id:"03", label:"ZONE 03 - OUEST", coef:0.95 },
-    { id:"04", label:"ZONE 04 - SUD",   coef:0.80 },
+    { id:"01", label:"Zone 01 — Nord",  coef:1.00 },
+    { id:"02", label:"Zone 02 — Est",   coef:0.95 },
+    { id:"03", label:"Zone 03 — Ouest", coef:0.95 },
+    { id:"04", label:"Zone 04 — Sud",   coef:0.80 },
   ],
   genres: [
-    { id:"VP",   label:"VP - VOITURE PARTICULIÈRE", base:12500 },
-    { id:"VU",   label:"VU - VÉHICULE UTILITAIRE",  base:19000 },
-    { id:"MOTO", label:"MOTO - DEUX ROUES",          base:8500  },
-    { id:"TC",   label:"TC - TRANSPORT EN COMMUN",   base:28000 },
+    { id:"VP",   label:"VP — Voiture Particulière", base:12500 },
+    { id:"VU",   label:"VU — Véhicule Utilitaire",  base:19000 },
+    { id:"MOTO", label:"MOTO — Deux Roues",          base:8500  },
+    { id:"TC",   label:"TC — Transport en Commun",   base:28000 },
   ],
-  professions: ["CADRE","EMPLOYÉ","COMMERÇANT","FONCTIONNAIRE","MÉDECIN","AVOCAT","INGÉNIEUR","ENSEIGNANT","ARTISAN","RETRAITÉ","SANS PROFESSION"],
-  activites:   ["PRIVÉE","PUBLIQUE","COMMERCIALE","LIBÉRALE","ARTISANALE","AGRICOLE"],
   reductions: [
-    { id:"AUCUNE",      label:"Aucune",                    value:0    },
-    { id:"FLOTTE",      label:"Réduction Flotte 10%",      value:0.10 },
-    { id:"MULTIRISQUE", label:"Réduction Multi-risque 5%", value:0.05 },
-    { id:"ANCIENNETE",  label:"Réduction Ancienneté 15%",  value:0.15 },
+    { id:"AUCUNE",      label:"Aucune",              value:0    },
+    { id:"FLOTTE",      label:"Flotte –10%",         value:0.10 },
+    { id:"MULTIRISQUE", label:"Multi-risque –5%",    value:0.05 },
+    { id:"ANCIENNETE",  label:"Ancienneté –15%",     value:0.15 },
   ],
-  regimes: ["RÉGIME NORMAL","RÉGIME RÉDUIT","RÉGIME SPÉCIAL"],
-  usages:  ["USAGE PRIVÉ","USAGE COMMERCIAL","TAXI","TRANSPORT EN COMMUN","LOCATION"],
-  energies:["ESSENCE","DIESEL","GPL","ÉLECTRIQUE"],
-  pieces:  ["CNI","PASSEPORT","PERMIS DE CONDUIRE"],
-  types:   ["NOUVELLE AFFAIRE","RENOUVELLEMENT","AVENANT"],
-  fracts:  ["ANNUEL","SEMESTRIEL","TRIMESTRIEL","MENSUEL"],
+  usages:   ["USAGE PRIVÉ","USAGE COMMERCIAL","TAXI","TRANSPORT EN COMMUN","LOCATION"],
+  energies: ["ESSENCE","DIESEL","GPL","ÉLECTRIQUE"],
+  fracts:   ["ANNUEL","SEMESTRIEL","TRIMESTRIEL","MENSUEL"],
 };
 
 const GARANTIES_CONFIG = [
-  { key:"rc",  label:"RC - Responsabilité Civile",    required:true,  info:"ILLIMITÉ"          },
-  { key:"dr",  label:"DR - Défense et Recours",       required:true,  info:"INCLUS"            },
-  { key:"bdg", label:"BDG - Bris de Glace",           required:false, info:"4 500 DZD"         },
-  { key:"vol", label:"VOL - Vol du Véhicule",         required:false, info:"V.Vénale × 0.7%"   },
-  { key:"inc", label:"INC - Incendie",                required:false, info:"V.Vénale × 0.3%"   },
-  { key:"dc",  label:"DC - Dommages Collision",       required:false, info:"V.Vénale × 1.8%"   },
-  { key:"pt",  label:"PT - Personnes Transportées",  required:false, info:"1 250 DZD"          },
-  { key:"ir",  label:"IR - Individuelle Conducteur", required:false, info:"2 800 DZD"          },
-  { key:"tc",  label:"TC - Tous Chocs",               required:false, info:"3 500 DZD"          },
+  { key:"rc",  label:"RC — Responsabilité Civile",   required:true,  info:"Illimité"        },
+  { key:"dr",  label:"DR — Défense et Recours",      required:true,  info:"Inclus"          },
+  { key:"bdg", label:"BDG — Bris de Glace",          required:false, info:"4 500 DZD"       },
+  { key:"vol", label:"VOL — Vol du Véhicule",        required:false, info:"Val.Vénale × 0.7%"},
+  { key:"inc", label:"INC — Incendie",               required:false, info:"Val.Vénale × 0.3%"},
+  { key:"dc",  label:"DC — Dommages Collision",      required:false, info:"Val.Vénale × 1.8%"},
+  { key:"pt",  label:"PT — Personnes Transportées",  required:false, info:"1 250 DZD"       },
+  { key:"ir",  label:"IR — Individuelle Conducteur", required:false, info:"2 800 DZD"       },
+  { key:"tc",  label:"TC — Tous Chocs",              required:false, info:"3 500 DZD"       },
 ];
 
-const GARANTIES_LABELS = Object.fromEntries(GARANTIES_CONFIG.map(g => [g.key, g.label]));
-
 // ═══════════════════════════════════════════════════════════════
-// MOTEUR DE CALCUL — fonction pure, hors composant
+// MOTEUR DE CALCUL
 // ═══════════════════════════════════════════════════════════════
 function computeQuittance(f) {
-  const base     = REF.genres.find(g => g.id === f.genreVehicule)?.base ?? 12500;
-  const coefZone = REF.zones.find(z => z.id === f.zone)?.coef ?? 1.0;
-  const age      = parseInt(f.age) || 30;
-  const coefAge  = age < 25 ? 1.5 : age > 60 ? 0.9 : 1.0;
-  const coefSexe = f.sexe === 'F' ? 0.95 : 1.05;
+  const base      = REF.genres.find(g => g.id === f.genreVehicule)?.base ?? 12500;
+  const coefZone  = REF.zones.find(z => z.id === f.zone)?.coef ?? 1.0;
+  const age       = parseInt(f.age) || 30;
+  const coefAge   = age < 25 ? 1.5 : age > 60 ? 0.9 : 1.0;
+  const coefSexe  = f.sexe === 'F' ? 0.95 : 1.05;
   const primeBase = base * coefZone * coefAge * coefSexe;
-
-  const valV = parseFloat(f.valeurVenale) || 0;
+  const valV      = parseFloat(f.valeurVenale) || 0;
   let totalOptions = 0;
   if (f.garanties.bdg) totalOptions += 4500;
   if (f.garanties.vol) totalOptions += valV * 0.007;
@@ -79,7 +71,6 @@ function computeQuittance(f) {
   if (f.garanties.pt)  totalOptions += 1250;
   if (f.garanties.ir)  totalOptions += 2800;
   if (f.garanties.tc)  totalOptions += 3500;
-
   const accessoires         = (parseFloat(f.valeurAutoRadio) || 0) * 0.025;
   const primeAvantReduction = primeBase + totalOptions;
   const tauxRed             = REF.reductions.find(r => r.id === f.reduction)?.value ?? 0;
@@ -94,9 +85,7 @@ function computeQuittance(f) {
   const timbreGradue        = (parseInt(f.nombreDimension) || 1) * 50;
   const totalAPayer         = primeNette + accessoires + totalTaxes + timbreDimension + timbreGradue;
   const apport              = primeNette * 0.12;
-  const gestion             = 850;
-
-  const fmt = (n) => n.toFixed(2);
+  const fmt = n => n.toFixed(2);
   return {
     primeBase: fmt(primeBase), totalOptions: fmt(totalOptions),
     primeAvantReduction: fmt(primeAvantReduction), montantReduction: fmt(montantReduction),
@@ -105,112 +94,68 @@ function computeQuittance(f) {
     taxesPrime: fmt(taxesPrime), taxeAccessoires: fmt(taxeAccessoires),
     totalTaxes: fmt(totalTaxes), timbreDimension: fmt(timbreDimension),
     timbreGradue: fmt(timbreGradue), totalAPayer: fmt(totalAPayer),
-    apport: fmt(apport), gestion: fmt(gestion), totalCommissions: fmt(apport + gestion),
+    apport: fmt(apport), gestion: '850.00', totalCommissions: fmt(apport + 850),
   };
 }
 
 // ═══════════════════════════════════════════════════════════════
 // ÉTAT INITIAL
 // ═══════════════════════════════════════════════════════════════
-const INITIAL_FORM = {
-  // Police
-  agence:"16001 - ALGER CENTRE", numPolice:`POL-${Date.now()}`, numAvenant:"0",
-  numGarantie:"0", refDossier:"", convention:"9901 - INDIVIDUELLE",
-  sousConvention:"", dateEffet:new Date().toISOString().split('T')[0],
-  heureEffet:"00:00", dateEcheance:"", fractionnement:"ANNUEL",
-  contratFerme:false, souscritLe:new Date().toISOString().split('T')[0],
-  saisiLe:new Date().toISOString().split('T')[0], duree:"12",
-  tarif:"TARIF STANDARD", type:"NOUVELLE AFFAIRE", reduction:"AUCUNE",
-  regime:"RÉGIME NORMAL", typeDimension:"Standard", nombreDimension:"1", exoneration:"Aucune",
+const INITIAL = {
   // Assuré
-  nomAssure:"", qualite:"MONSIEUR", codeAssure:"", typePiece:"CNI",
-  numPieceIdentite:"", adresse:"", ville:"", wilaya:"16-Alger",
-  zone:"01", profession:"EMPLOYÉ", activite:"PRIVÉE", chiffreAffaire:"",
-  telephone:"", email:"",
+  nomAssure:'', qualite:'MONSIEUR', typePiece:'CNI', numPieceIdentite:'',
+  adresse:'', ville:'', wilaya:'16-Alger',
+  telephone:'', email:'',
   // Conducteur
-  sexe:"H", age:"30", datePermis:"",
+  sexe:'H', age:'30', datePermis:'',
   // Véhicule
-  numOrdre:"0", marque:"", typeVehicule:"", immatriculation:"",
-  dateMEC:"", dernierControle:"", energie:"ESSENCE", turbo:false,
-  delegataireCredit:"", chassis:"", moteur:"", carrosserie:"",
-  avecRemorque:false, puissance:"", tonnage:"", cylindree:"",
-  vitesse:"", places:"5", matInflammableVeh:false,
-  genreVehicule:"VP", usage:"USAGE PRIVÉ",
+  marque:'', typeVehicule:'', immatriculation:'',
+  dateMEC:'', energie:'ESSENCE', chassis:'', puissance:'', places:'5',
+  genreVehicule:'VP', usage:'USAGE PRIVÉ', zone:'01',
+  // Contrat
+  dateEffet: new Date().toISOString().split('T')[0],
+  dateEcheance:'', duree:'12', fractionnement:'ANNUEL',
+  reduction:'AUCUNE', nombreDimension:'1',
   // SMP
-  valeurVenale:"1500000", valeurANeuf:"2500000",
-  valeurAutoRadio:"0", capitalAssure:"2500000",
+  valeurVenale:'1500000', valeurANeuf:'2500000', valeurAutoRadio:'0',
   // Garanties
-  garanties:{ rc:true, dr:true, bdg:false, vol:false, inc:false, dc:false, pt:true, ir:false, tc:false },
+  garanties:{ rc:true, dr:true, bdg:false, vol:false, inc:false, dc:false, pt:false, ir:false, tc:false },
   // Majorations
-  majPermis:"0", majAge:"0", majMatieres:"0",
+  majPermis:'0', majAge:'0', majMatieres:'0',
 };
 
 // ═══════════════════════════════════════════════════════════════
-// SOUS-COMPOSANTS UI
+// UI
 // ═══════════════════════════════════════════════════════════════
-const Field = ({ label, children }) => (
+const F = ({ label, children }) => (
   <div className="flex flex-col gap-1">
     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</label>
     {children}
   </div>
 );
 
-const Input = ({ label, name, value, onChange, type="text", placeholder, readOnly }) => (
-  <Field label={label}>
-    <input
-      type={type} name={name} value={value ?? ""} onChange={onChange}
+const Inp = ({ label, name, value, onChange, type='text', placeholder='', readOnly=false }) => (
+  <F label={label}>
+    <input type={type} name={name} value={value ?? ''} onChange={onChange}
       placeholder={placeholder} readOnly={readOnly}
-      className={`px-3 py-2.5 rounded-lg border-2 text-sm font-semibold outline-none transition-all
-        ${readOnly
-          ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed'
-          : 'bg-white border-slate-200 text-slate-800 focus:border-[#1a3a6b] focus:shadow-sm'
-        }`}
-    />
-  </Field>
+      className={`px-3 py-2.5 rounded-xl border-2 text-sm font-semibold outline-none transition-all
+        ${readOnly ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed'
+                   : 'bg-white border-slate-200 text-slate-800 focus:border-[#1a3a6b]'}`} />
+  </F>
 );
 
-const Select = ({ label, name, value, onChange, options, isObj }) => (
-  <Field label={label}>
-    <select
-      name={name} value={value ?? ""}  onChange={onChange}
-      className="px-3 py-2.5 rounded-lg border-2 border-slate-200 bg-white text-sm font-semibold text-slate-800 outline-none focus:border-[#1a3a6b] transition-all cursor-pointer"
-    >
+const Sel = ({ label, name, value, onChange, options, isObj=false }) => (
+  <F label={label}>
+    <select name={name} value={value ?? ''} onChange={onChange}
+      className="px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-sm font-semibold text-slate-800 outline-none focus:border-[#1a3a6b] transition-all cursor-pointer">
       {options.map(o => (
         <option key={isObj ? o.id : o} value={isObj ? o.id : o}>
           {isObj ? o.label : o}
         </option>
       ))}
     </select>
-  </Field>
+  </F>
 );
-
-const Checkbox = ({ label, name, checked, onChange, disabled }) => (
-  <label className="flex items-center gap-2 cursor-pointer select-none group">
-    <input
-      type="checkbox" name={name} checked={checked} onChange={onChange} disabled={disabled}
-      className="w-4 h-4 rounded accent-[#1a3a6b]"
-    />
-    <span className={`text-sm font-semibold ${disabled ? 'text-slate-400' : 'text-slate-700 group-hover:text-[#1a3a6b]'}`}>
-      {label}
-    </span>
-  </label>
-);
-
-const SectionCard = ({ title, color="slate", children }) => {
-  const colors = {
-    slate: "bg-slate-50 border-slate-200 text-slate-800",
-    blue:  "bg-blue-50  border-blue-200  text-blue-900",
-    amber: "bg-amber-50 border-amber-200 text-amber-900",
-    green: "bg-green-50 border-green-200 text-green-900",
-    red:   "bg-red-50   border-red-200   text-red-900",
-  };
-  return (
-    <div className={`rounded-xl border-2 p-5 ${colors[color]}`}>
-      {title && <h3 className="text-xs font-black uppercase tracking-widest mb-4 pb-2 border-b border-current/20">{title}</h3>}
-      {children}
-    </div>
-  );
-};
 
 const QRow = ({ label, value, accent, large }) => (
   <div className={`flex justify-between items-center py-2 border-b border-white/10 ${large ? 'py-4' : ''}`}>
@@ -221,22 +166,27 @@ const QRow = ({ label, value, accent, large }) => (
   </div>
 );
 
-const Tag = ({ children }) => (
-  <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
-    {children}
-  </span>
-);
+// ═══════════════════════════════════════════════════════════════
+// ÉTAPES
+// ═══════════════════════════════════════════════════════════════
+const STEPS = [
+  { label:'Assuré & Véhicule', icon:'👤' },
+  { label:'Conducteur',        icon:'🧑' },
+  { label:'Garanties & SMP',   icon:'🛡️' },
+  { label:'Devis Final',       icon:'💰' },
+];
 
 // ═══════════════════════════════════════════════════════════════
 // COMPOSANT PRINCIPAL
 // ═══════════════════════════════════════════════════════════════
-const DevisStepByStep = ({ onGoHome, onSaveToDashboard, user }) => {
+const DevisStepByStep = ({ onGoHome }) => {
   const [step, setStep]           = useState(1);
-  const [activeTab, setActiveTab] = useState('police');
-  const [form, setForm]           = useState(INITIAL_FORM);
-  const [quittance, setQuittance] = useState(() => computeQuittance(INITIAL_FORM));
+  const [form, setForm]           = useState(INITIAL);
+  const [quittance, setQuittance] = useState(() => computeQuittance(INITIAL));
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]         = useState('');
 
-  // Recalcul uniquement quand les champs qui impactent la prime changent
   useEffect(() => {
     setQuittance(computeQuittance(form));
   }, [
@@ -245,524 +195,430 @@ const DevisStepByStep = ({ onGoHome, onSaveToDashboard, user }) => {
     form.majPermis, form.majAge, form.majMatieres, form.nombreDimension,
   ]);
 
-  // Handler unifié mémorisé
-  const handleUpdate = useCallback((e) => {
+  // Auto-calcul date échéance
+  useEffect(() => {
+    if (!form.dateEffet || !form.duree) return;
+    const d = new Date(form.dateEffet);
+    d.setMonth(d.getMonth() + parseInt(form.duree || 12));
+    setForm(prev => ({ ...prev, dateEcheance: d.toISOString().split('T')[0] }));
+  }, [form.dateEffet, form.duree]);
+
+  const upd = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     setForm(prev => {
       if (type === 'checkbox' && name in prev.garanties)
         return { ...prev, garanties: { ...prev.garanties, [name]: checked } };
-      if (type === 'checkbox')
-        return { ...prev, [name]: checked };
+      if (type === 'checkbox') return { ...prev, [name]: checked };
       return { ...prev, [name]: value };
     });
   }, []);
 
-  const handleSave = () => {
-    onSaveToDashboard({
-      ...form,
-      quittance,
-      createdAt: new Date().toLocaleString(),
-      status: "ÉMIS",
-      genre: "AUTO",
-    });
+  const handleSubmit = async () => {
+    setError('');
+    if (!form.nomAssure)       return setError('Le nom de l\'assuré est obligatoire.');
+    if (!form.email)           return setError('L\'email est obligatoire.');
+    if (!form.telephone)       return setError('Le téléphone est obligatoire.');
+    if (!form.marque)          return setError('La marque du véhicule est obligatoire.');
+    if (!form.immatriculation) return setError('L\'immatriculation est obligatoire.');
+
+    setSubmitting(true);
+    try {
+      await fetch('http://localhost:3001/api/demandes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nom:             form.nomAssure,
+          email:           form.email,
+          telephone:       form.telephone,
+          marque:          form.marque,
+          immatriculation: form.immatriculation,
+          wilaya:          form.wilaya,
+          message:         JSON.stringify({ ...form, quittance }),
+        }),
+      });
+      setSubmitted(true);
+    } catch {
+      setError('Erreur lors de l\'envoi. Veuillez réessayer.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  // Tabs de l'étape 1
-  const TABS = [
-    { id:'police',    label:'Police'     },
-    { id:'vehicule',  label:'Véhicule'   },
-    { id:'vehicule2', label:'Véhicule…'  },
-    { id:'garanties', label:'Garanties'  },
-    { id:'smp',       label:'SMP'        },
-    { id:'quittance', label:'Quittance'  },
-  ];
-
-  // Coefficients affichés à l'étape 2
-  const coefficients = [
-    ["Zone Tarifaire", REF.zones.find(z => z.id === form.zone)?.coef ?? 1.0],
-    ["Âge Conducteur", parseInt(form.age) < 25 ? '1.50' : parseInt(form.age) > 60 ? '0.90' : '1.00'],
-    ["Sexe",           form.sexe === 'F' ? '0.95' : '1.05'],
-    ["Réduction",      REF.reductions.find(r => r.id === form.reduction)?.value.toFixed(2) ?? '0.00'],
-  ];
-
-  const infosDossier = [
-    ["N° Police",      form.numPolice],
-    ["Assuré",         form.nomAssure || "—"],
-    ["Véhicule",       [form.marque, form.immatriculation].filter(Boolean).join(" · ") || "—"],
-    ["Date Effet",     form.dateEffet],
-    ["Fractionnement", form.fractionnement],
-  ];
+  // ── ÉCRAN DE CONFIRMATION ──
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 flex items-center justify-center p-8">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-12 text-center">
+          <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center text-5xl mx-auto mb-6">✅</div>
+          <h2 className="text-3xl font-black text-slate-900 uppercase mb-3">Demande Envoyée !</h2>
+          <p className="text-slate-500 mb-6">
+            Votre demande a bien été transmise à un agent SAA. Vous recevrez votre numéro de police et vos identifiants par email.
+          </p>
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8 text-left space-y-2">
+            <p className="text-amber-800 text-sm font-black uppercase tracking-wide">📋 Récapitulatif</p>
+            <div className="text-sm space-y-1">
+              <p><span className="text-slate-500">Assuré :</span> <span className="font-bold text-slate-800">{form.nomAssure}</span></p>
+              <p><span className="text-slate-500">Email :</span> <span className="font-bold text-slate-800">{form.email}</span></p>
+              <p><span className="text-slate-500">Véhicule :</span> <span className="font-bold text-slate-800">{form.marque} · {form.immatriculation}</span></p>
+              <p><span className="text-slate-500">Prime estimée :</span> <span className="font-black text-orange-600">{quittance.totalAPayer} DZD / an</span></p>
+            </div>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-8">
+            <p className="text-blue-700 text-sm font-bold">
+              📧 Un email sera envoyé à <strong>{form.email}</strong> avec votre N° de police et votre mot de passe dès validation par l'agent.
+            </p>
+          </div>
+          <button onClick={onGoHome}
+            className="w-full bg-[#1a3a6b] hover:bg-[#0f2247] text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg">
+            ← Retour à l'accueil
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 p-4 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
 
-        {/* ── HEADER ── */}
+        {/* HEADER */}
         <header className="bg-gradient-to-r from-[#0f2247] via-[#1a3a6b] to-[#1e4d8c] px-6 py-5 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <div className="bg-[#e89d1b] w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg">🚗</div>
             <div>
-              <p className="font-black text-white text-sm tracking-wide">ORASS®Suite — Société Nationale d'Assurance</p>
-              <p className="text-blue-300 text-[10px] uppercase tracking-widest">Licence N°1622130900 · Module Automobile · v4.5.2</p>
+              <p className="font-black text-white text-sm tracking-wide">ORASS®Suite — SAA Assurances</p>
+              <p className="text-blue-300 text-[10px] uppercase tracking-widest">Devis & Souscription Automobile en ligne</p>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-2">
-            {[1,2,3,4].map(s => (
-              <div key={s} className={`h-1.5 w-10 rounded-full transition-all duration-500 ${s <= step ? 'bg-[#e89d1b]' : 'bg-white/20'}`} />
-            ))}
-          </div>
+          <button onClick={onGoHome} className="text-white/50 hover:text-white text-xs font-black uppercase tracking-widest transition-all">
+            ✕ Quitter
+          </button>
         </header>
 
-        {/* ── INFO BAR ── */}
-        <div className="bg-[#f0f4ff] border-b border-blue-100 px-6 py-2.5 flex justify-between items-center text-xs">
-          <div className="flex gap-6 text-slate-600">
-            {[["Police", form.numPolice],["Avenant", form.numAvenant],["Garantie", form.numGarantie]].map(([k,v]) => (
-              <span key={k}><strong>{k}:</strong> <span className="font-mono text-[#1a3a6b]">{v}</span></span>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            {["AUTOINTE","DRTO"].map(t => (
-              <span key={t} className="px-2.5 py-0.5 rounded-full bg-[#1a3a6b]/10 text-[#1a3a6b] font-bold text-[10px]">{t}</span>
-            ))}
-          </div>
+        {/* STEPS */}
+        <div className="flex border-b border-slate-200 bg-slate-50">
+          {STEPS.map((s, i) => (
+            <button key={i} onClick={() => i < step - 1 && setStep(i + 1)}
+              className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 flex items-center justify-center gap-1.5
+                ${step === i + 1 ? 'text-[#1a3a6b] border-[#1a3a6b] bg-white' : i < step - 1 ? 'text-emerald-600 border-emerald-400 cursor-pointer hover:bg-white' : 'text-slate-400 border-transparent'}`}>
+              <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[8px] font-black mr-1
+                ${step === i + 1 ? 'bg-[#1a3a6b] text-white' : i < step - 1 ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                {i < step - 1 ? '✓' : i + 1}
+              </span>
+              {s.icon} {s.label}
+            </button>
+          ))}
         </div>
 
-        <div className="p-6 md:p-8">
+        <div className="p-6 md:p-8 space-y-6">
 
-          {/* ════ ÉTAPE 1 — SAISIE ════ */}
+          {/* ════ ÉTAPE 1 — ASSURÉ & VÉHICULE ════ */}
           {step === 1 && (
-            <div className="space-y-6">
-              {/* Onglets */}
-              <div className="flex gap-1 border-b-2 border-slate-200 pb-0 overflow-x-auto">
-                {TABS.map(t => (
-                  <button key={t.id} onClick={() => setActiveTab(t.id)}
-                    className={`px-4 py-2.5 rounded-t-lg text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all ${
-                      activeTab === t.id
-                        ? 'bg-[#1a3a6b] text-white shadow-md translate-y-px'
-                        : 'text-slate-500 hover:text-[#1a3a6b] hover:bg-slate-100'
-                    }`}>
-                    {t.label}
-                  </button>
-                ))}
+            <>
+              {/* Assuré */}
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+                <h3 className="text-xs font-black uppercase tracking-widest text-blue-800 mb-4">👤 Informations Assuré</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                  <F label="Qualité">
+                    <select name="qualite" value={form.qualite} onChange={upd}
+                      className="px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-sm font-semibold outline-none focus:border-[#1a3a6b] cursor-pointer">
+                      {["MONSIEUR","MADAME","MADEMOISELLE","SOCIÉTÉ"].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </F>
+                  <div className="col-span-3"><Inp label="Nom & Prénom *" name="nomAssure" value={form.nomAssure} onChange={upd} placeholder="ex: BENALI KARIM" /></div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                  <Sel label="Type Pièce" name="typePiece" value={form.typePiece} onChange={upd} options={["CNI","PASSEPORT","PERMIS DE CONDUIRE"]} />
+                  <div className="col-span-3"><Inp label="N° Pièce Identité" name="numPieceIdentite" value={form.numPieceIdentite} onChange={upd} /></div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                  <Inp label="Adresse"  name="adresse"  value={form.adresse}  onChange={upd} />
+                  <Inp label="Ville"    name="ville"    value={form.ville}    onChange={upd} />
+                  <Sel label="Wilaya"   name="wilaya"   value={form.wilaya}   onChange={upd} options={REF.wilayas} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Inp label="Téléphone *" name="telephone" value={form.telephone} onChange={upd} type="tel" placeholder="05XXXXXXXX" />
+                  <Inp label="Email *"     name="email"     value={form.email}     onChange={upd} type="email" placeholder="exemple@email.com" />
+                </div>
               </div>
 
-              {/* ── POLICE ── */}
-              {activeTab === 'police' && (
-                <div className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input label="Convention"   name="convention"    value={form.convention}    onChange={handleUpdate} />
-                    <Input label="S/Convention" name="sousConvention" value={form.sousConvention} onChange={handleUpdate} />
-                    <Input label="Réf. Dossier" name="refDossier"    value={form.refDossier}    onChange={handleUpdate} />
-                  </div>
-
-                  <SectionCard title="Informations Assuré" color="blue">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input  label="Code"   name="codeAssure" value={form.codeAssure} onChange={handleUpdate} />
-                      <Select label="Qualité" name="qualite"   value={form.qualite}    onChange={handleUpdate} options={["MONSIEUR","MADAME","MADEMOISELLE","SOCIÉTÉ"]} />
-                    </div>
-                    <div className="mt-4">
-                      <Input label="Nom & Prénom" name="nomAssure" value={form.nomAssure} onChange={handleUpdate} placeholder="Nom complet" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <Select label="Type Pièce"        name="typePiece"       value={form.typePiece}       onChange={handleUpdate} options={REF.pieces} />
-                      <Input  label="N° Pièce Identité" name="numPieceIdentite" value={form.numPieceIdentite} onChange={handleUpdate} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                      <Input  label="Adresse"    name="adresse"    value={form.adresse}    onChange={handleUpdate} />
-                      <Input  label="Ville"      name="ville"      value={form.ville}      onChange={handleUpdate} />
-                      <Select label="Wilaya"     name="wilaya"     value={form.wilaya}     onChange={handleUpdate} options={REF.wilayas} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                      <Select label="Profession"    name="profession"    value={form.profession}    onChange={handleUpdate} options={REF.professions} />
-                      <Select label="Activité"      name="activite"      value={form.activite}      onChange={handleUpdate} options={REF.activites} />
-                      <Input  label="Ch. d'Affaire" name="chiffreAffaire" value={form.chiffreAffaire} onChange={handleUpdate} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <Input label="Téléphone" name="telephone" value={form.telephone} onChange={handleUpdate} type="tel" />
-                      <Input label="E-Mail"    name="email"     value={form.email}     onChange={handleUpdate} type="email" />
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard title="Couverture" color="slate">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                      <div className="flex items-center gap-2 md:col-span-1">
-                        <Checkbox label="Contrat Ferme" name="contratFerme" checked={form.contratFerme} onChange={handleUpdate} />
-                      </div>
-                      <Input label="Souscrit Le" name="souscritLe" value={form.souscritLe} onChange={handleUpdate} type="date" />
-                      <Input label="Saisi Le"    name="saisiLe"    value={form.saisiLe}    onChange={handleUpdate} type="date" />
-                      <Input label="Durée (mois)" name="duree"     value={form.duree}      onChange={handleUpdate} type="number" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <Input  label="Date Effet"   name="dateEffet"   value={form.dateEffet}   onChange={handleUpdate} type="date" />
-                      <Input  label="Date Échéance" name="dateEcheance" value={form.dateEcheance} onChange={handleUpdate} type="date" />
-                      <Select label="Fractionnement" name="fractionnement" value={form.fractionnement} onChange={handleUpdate} options={REF.fracts} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <Input  label="Tarif"     name="tarif"     value={form.tarif}     onChange={handleUpdate} />
-                      <Select label="Type"      name="type"      value={form.type}      onChange={handleUpdate} options={REF.types} />
-                      <Select label="Réduction" name="reduction" value={form.reduction} onChange={handleUpdate} options={REF.reductions} isObj />
-                      <Select label="Régime"    name="regime"    value={form.regime}    onChange={handleUpdate} options={REF.regimes} />
-                    </div>
-                  </SectionCard>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <SectionCard title="Bonus & Commissions" color="amber">
-                      <div className="space-y-3">
-                        <Input label="Taux Apport"    value="12%"       readOnly />
-                        <Input label="Frais Gestion"  value="850.00 DZD" readOnly />
-                        <Input label="Commission spéciale" value="0%"   readOnly />
-                      </div>
-                    </SectionCard>
-                    <SectionCard title="Timbres de Dimensions" color="green">
-                      <div className="space-y-3">
-                        <Select label="Type"        name="typeDimension"  value={form.typeDimension}  onChange={handleUpdate} options={["Standard","Grande Dimension","Remorque"]} />
-                        <Input  label="Nombre"      name="nombreDimension" value={form.nombreDimension} onChange={handleUpdate} type="number" />
-                        <Select label="Exonération" name="exoneration"    value={form.exoneration}    onChange={handleUpdate} options={["Aucune","Diplomatique","État"]} />
-                      </div>
-                    </SectionCard>
-                  </div>
+              {/* Véhicule */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-600 mb-4">🚗 Véhicule</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                  <Inp label="Marque *"          name="marque"         value={form.marque}         onChange={upd} placeholder="ex: TOYOTA" />
+                  <Inp label="Type"              name="typeVehicule"   value={form.typeVehicule}   onChange={upd} />
+                  <Sel label="Genre *"           name="genreVehicule"  value={form.genreVehicule}  onChange={upd} options={REF.genres} isObj />
+                  <Sel label="Zone Tarifaire"    name="zone"           value={form.zone}           onChange={upd} options={REF.zones} isObj />
                 </div>
-              )}
-
-              {/* ── VÉHICULE ── */}
-              {activeTab === 'vehicule' && (
-                <div className="space-y-5">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Input  label="N° d'Ordre" name="numOrdre"      value={form.numOrdre}      onChange={handleUpdate} />
-                    <Input  label="Marque"     name="marque"        value={form.marque}        onChange={handleUpdate} />
-                    <Input  label="Type"       name="typeVehicule"  value={form.typeVehicule}  onChange={handleUpdate} />
-                    <Select label="Genre"      name="genreVehicule" value={form.genreVehicule} onChange={handleUpdate} options={REF.genres} isObj />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Select label="Usage"          name="usage" value={form.usage} onChange={handleUpdate} options={REF.usages} />
-                    <Select label="Zone Tarifaire" name="zone"  value={form.zone}  onChange={handleUpdate} options={REF.zones} isObj />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input label="Immatriculation"  name="immatriculation" value={form.immatriculation} onChange={handleUpdate} />
-                    <Input label="M.E.C"            name="dateMEC"         value={form.dateMEC}         onChange={handleUpdate} type="date" />
-                    <Input label="Dernier Contrôle" name="dernierControle" value={form.dernierControle} onChange={handleUpdate} type="date" />
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
-                    <Select label="Énergie" name="energie" value={form.energie} onChange={handleUpdate} options={REF.energies} />
-                    <div className="flex flex-col gap-3 pt-2">
-                      <Checkbox label="Turbo"        name="turbo"        checked={form.turbo}        onChange={handleUpdate} />
-                      <Checkbox label="Avec Remorque" name="avecRemorque" checked={form.avecRemorque} onChange={handleUpdate} />
-                    </div>
-                    <Input label="Délégataire Crédit" name="delegataireCredit" value={form.delegataireCredit} onChange={handleUpdate} />
-                    <div className="pt-2">
-                      <Checkbox label="Matières inflammables" name="matInflammableVeh" checked={form.matInflammableVeh} onChange={handleUpdate} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input label="N° Châssis"  name="chassis"    value={form.chassis}    onChange={handleUpdate} />
-                    <Input label="N° Moteur"   name="moteur"     value={form.moteur}     onChange={handleUpdate} />
-                    <Input label="Carrosserie" name="carrosserie" value={form.carrosserie} onChange={handleUpdate} />
-                  </div>
-                  <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-                    <Input label="Puissance" name="puissance" value={form.puissance} onChange={handleUpdate} />
-                    <Input label="Tonnage"   name="tonnage"   value={form.tonnage}   onChange={handleUpdate} />
-                    <Input label="Cylindrée" name="cylindree" value={form.cylindree} onChange={handleUpdate} />
-                    <Input label="Vitesse"   name="vitesse"   value={form.vitesse}   onChange={handleUpdate} />
-                    <Input label="Nb Places" name="places"    value={form.places}    onChange={handleUpdate} />
-                  </div>
-                  <Select label="Wilaya de Circulation" name="wilaya" value={form.wilaya} onChange={handleUpdate} options={REF.wilayas} />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                  <Inp label="Immatriculation *" name="immatriculation" value={form.immatriculation} onChange={upd} placeholder="123456-16-25" />
+                  <Inp label="M.E.C le"          name="dateMEC"         value={form.dateMEC}         onChange={upd} type="date" />
+                  <Sel label="Énergie"           name="energie"         value={form.energie}         onChange={upd} options={REF.energies} />
+                  <Inp label="Puissance (CV)"    name="puissance"       value={form.puissance}       onChange={upd} type="number" />
                 </div>
-              )}
-
-              {/* ── VÉHICULE 2 ── */}
-              {activeTab === 'vehicule2' && (
-                <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
-                  Informations complémentaires véhicule (documents, remorque…) — à compléter
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Inp label="N° Châssis"  name="chassis" value={form.chassis} onChange={upd} />
+                  <Inp label="Nb Places"   name="places"  value={form.places}  onChange={upd} type="number" />
+                  <Sel label="Usage"       name="usage"   value={form.usage}   onChange={upd} options={REF.usages} />
+                  <Sel label="Wilaya Circulation" name="wilaya" value={form.wilaya} onChange={upd} options={REF.wilayas} />
                 </div>
-              )}
+              </div>
 
-              {/* ── GARANTIES ── */}
-              {activeTab === 'garanties' && (
-                <div className="space-y-5">
-                  <SectionCard title="Sélection des Garanties" color="blue">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {GARANTIES_CONFIG.map(g => (
-                        <div key={g.key}
-                          className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all
-                            ${form.garanties[g.key]
-                              ? 'bg-[#1a3a6b]/5 border-[#1a3a6b]/40 shadow-sm'
-                              : 'bg-white border-slate-200 hover:border-slate-300'
-                            }`}>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox" name={g.key} checked={form.garanties[g.key]}
-                              onChange={handleUpdate} disabled={g.required}
-                              className="w-4 h-4 accent-[#1a3a6b]"
-                            />
-                            <div>
-                              <p className={`text-sm font-bold ${form.garanties[g.key] ? 'text-[#1a3a6b]' : 'text-slate-700'}`}>{g.label}</p>
-                              {g.required && <p className="text-[10px] font-black text-red-500 uppercase">Obligatoire</p>}
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-500 text-right">{g.info}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard title="Majorations" color="red">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input label="Permis (DZD)"              name="majPermis"   value={form.majPermis}   onChange={handleUpdate} type="number" />
-                      <Input label="Âge (DZD)"                 name="majAge"      value={form.majAge}      onChange={handleUpdate} type="number" />
-                      <Input label="Matières Inflammables (DZD)" name="majMatieres" value={form.majMatieres} onChange={handleUpdate} type="number" />
-                    </div>
-                  </SectionCard>
+              {/* Contrat */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+                <h3 className="text-xs font-black uppercase tracking-widest text-amber-800 mb-4">📋 Contrat</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Inp label="Date Effet *"   name="dateEffet"      value={form.dateEffet}      onChange={upd} type="date" />
+                  <Inp label="Durée (mois)"   name="duree"          value={form.duree}          onChange={upd} type="number" />
+                  <Inp label="Date Échéance"  name="dateEcheance"   value={form.dateEcheance}   onChange={upd} type="date" readOnly />
+                  <Sel label="Fractionnement" name="fractionnement" value={form.fractionnement} onChange={upd} options={REF.fracts} />
                 </div>
-              )}
-
-              {/* ── SMP ── */}
-              {activeTab === 'smp' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {[
-                    { label:"Capital Assuré",  name:"capitalAssure",  bg:"from-slate-800 to-slate-900", lbl:"text-blue-300", inp:"text-white" },
-                    { label:"Valeur à Neuf",   name:"valeurANeuf",    bg:"from-blue-700 to-blue-800",   lbl:"text-blue-100", inp:"text-white" },
-                    { label:"Valeur Vénale",   name:"valeurVenale",   bg:"from-white to-slate-50",      lbl:"text-slate-500", inp:"text-slate-900", border:true },
-                    { label:"Valeur Auto-Radio", name:"valeurAutoRadio", bg:"from-white to-green-50",   lbl:"text-slate-500", inp:"text-slate-900", border:true },
-                  ].map(c => (
-                    <div key={c.name} className={`p-8 bg-gradient-to-br ${c.bg} rounded-2xl shadow-lg ${c.border ? 'border-2 border-slate-100' : ''}`}>
-                      <label className={`text-[10px] font-black uppercase tracking-widest block mb-3 ${c.lbl}`}>{c.label}</label>
-                      <input
-                        name={c.name} value={form[c.name]} onChange={handleUpdate}
-                        className={`bg-transparent text-5xl font-black border-b-4 border-current/30 w-full outline-none focus:border-current pb-2 transition-all ${c.inp}`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* ── QUITTANCE (onglet étape 1) ── */}
-              {activeTab === 'quittance' && (
-                <div className="space-y-5">
-                  <div className="bg-gradient-to-br from-slate-900 to-[#0f2247] rounded-2xl p-8 border-b-4 border-[#e89d1b]">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-300 border-b border-white/10 pb-3 mb-4">Tarification</h3>
-                    {[
-                      ["Prime de Base",           quittance.primeBase,           false],
-                      ["+ Garanties Facultatives", quittance.totalOptions,        false],
-                      ["= Prime Avant Réduction",  quittance.primeAvantReduction, true ],
-                      ["− Réduction Commerciale",  quittance.montantReduction,    false],
-                      ["= Prime Après Réduction",  quittance.primeApresReduction, false],
-                      ["+ Majorations",            quittance.totalMajorations,    false],
-                    ].map(([l,v,a]) => <QRow key={l} label={l} value={v} accent={a} />)}
-
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-300 border-b border-white/10 pb-3 mb-4 mt-6">Primes & Taxes</h3>
-                    {[
-                      ["Prime Nette",              quittance.primeNette,          true ],
-                      ["Accessoires Auto-Radio",   quittance.accessoires,         false],
-                      ["Taxes / Prime (19%)",      quittance.taxesPrime,          false],
-                      ["Taxes / Accessoires (19%)",quittance.taxeAccessoires,     false],
-                      ["Total Taxes",              quittance.totalTaxes,          true ],
-                      ["Timbre de Dimension",      quittance.timbreDimension,     false],
-                      ["Timbre Gradué",            quittance.timbreGradue,        false],
-                    ].map(([l,v,a]) => <QRow key={l} label={l} value={v} accent={a} />)}
-
-                    <div className="border-t-2 border-[#e89d1b]/50 mt-4 pt-4">
-                      <QRow label="TOTAL À PAYER (TTC)" value={quittance.totalAPayer} large />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <SectionCard title="Commissions" color="amber">
-                      <div className="space-y-2 text-sm">
-                        {[["Apport (12%)", quittance.apport],["Gestion", quittance.gestion],["Total", quittance.totalCommissions]].map(([l,v]) => (
-                          <div key={l} className="flex justify-between py-1.5 border-b border-amber-200 last:border-0 last:font-black last:text-base">
-                            <span className="text-slate-600">{l}</span>
-                            <span className="font-mono font-bold">{v} DZD</span>
-                          </div>
-                        ))}
-                      </div>
-                    </SectionCard>
-                    <SectionCard title="Comptabilisation" color="green">
-                      <div className="space-y-3 mb-4">
-                        <Input label="Émission : Pièce N°"  value="" readOnly />
-                        <Input label="Annulation : Pièce N°" value="" readOnly />
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[["Imprimer","blue"],["Encaissements","green"],["Annulation","red"],["REC","slate"],["Sinistres","purple"]].map(([l,c]) => (
-                          <button key={l} className={`py-2 rounded-lg text-white text-xs font-bold bg-${c}-600 hover:bg-${c}-700 transition col-span-1`}>{l}</button>
-                        ))}
-                      </div>
-                    </SectionCard>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            </>
           )}
 
           {/* ════ ÉTAPE 2 — CONDUCTEUR ════ */}
           {step === 2 && (
-            <div className="space-y-6">
-              <SectionCard title="Profil du Conducteur" color="blue">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <Field label="Sexe du Conducteur">
+            <>
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+                <h3 className="text-xs font-black uppercase tracking-widest text-blue-800 mb-5">🧑 Profil Conducteur</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
+                  <F label="Sexe du Conducteur">
                     <div className="flex gap-3">
-                      {[["H","👨 Homme"],["F","👩 Femme"]].map(([val,label]) => (
-                        <button key={val} onClick={() => setForm(p => ({...p, sexe:val}))}
-                          className={`flex-1 py-5 rounded-xl font-bold text-sm transition-all border-2
-                            ${form.sexe === val
-                              ? 'bg-[#1a3a6b] text-white border-[#1a3a6b] shadow-lg scale-105'
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-[#1a3a6b]/50'
-                            }`}>
-                          {label}
+                      {[["H","👨 Homme"],["F","👩 Femme"]].map(([val, lbl]) => (
+                        <button key={val} type="button" onClick={() => setForm(p => ({...p, sexe: val}))}
+                          className={`flex-1 py-4 rounded-xl font-bold text-sm transition-all border-2
+                            ${form.sexe === val ? 'bg-[#1a3a6b] text-white border-[#1a3a6b] shadow-lg' : 'bg-white text-slate-600 border-slate-200 hover:border-[#1a3a6b]/50'}`}>
+                          {lbl}
                         </button>
                       ))}
                     </div>
-                  </Field>
-                  <Input label="Âge du Conducteur" name="age" value={form.age} onChange={handleUpdate} type="number" />
+                  </F>
+                  <Inp label="Âge *" name="age" value={form.age} onChange={upd} type="number" />
                 </div>
-                <Input label="Date d'Obtention du Permis" name="datePermis" value={form.datePermis} onChange={handleUpdate} type="date" />
-              </SectionCard>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <SectionCard title="Coefficients Appliqués" color="amber">
-                  {coefficients.map(([l,v]) => (
-                    <div key={l} className="flex justify-between py-2 border-b border-amber-200 text-sm">
-                      <span className="text-slate-600">{l}</span>
-                      <span className="font-mono font-black text-amber-900">{v}</span>
-                    </div>
-                  ))}
-                </SectionCard>
-                <SectionCard title="Informations Complémentaires" color="green">
-                  {[["Genre", form.genreVehicule],["Zone", `${form.zone} — ${REF.zones.find(z=>z.id===form.zone)?.label}`],["Wilaya", form.wilaya],["Usage", form.usage]].map(([l,v]) => (
-                    <div key={l} className="flex justify-between py-2 border-b border-green-200 text-sm">
-                      <span className="text-slate-600">{l}</span>
-                      <span className="font-bold text-green-900">{v}</span>
-                    </div>
-                  ))}
-                </SectionCard>
+                <Inp label="Date d'obtention du Permis" name="datePermis" value={form.datePermis} onChange={upd} type="date" />
               </div>
-            </div>
+
+              {/* Coefficients en temps réel */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+                <h3 className="text-xs font-black uppercase tracking-widest text-amber-800 mb-4">📊 Coefficients Appliqués</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    ["Zone",      REF.zones.find(z => z.id === form.zone)?.coef ?? 1.0],
+                    ["Âge",       parseInt(form.age) < 25 ? '1.50' : parseInt(form.age) > 60 ? '0.90' : '1.00'],
+                    ["Sexe",      form.sexe === 'F' ? '0.95' : '1.05'],
+                    ["Réduction", REF.reductions.find(r => r.id === form.reduction)?.value.toFixed(2) ?? '0.00'],
+                  ].map(([l, v]) => (
+                    <div key={l} className="bg-white border border-amber-200 rounded-xl p-3 text-center">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">{l}</p>
+                      <p className="text-2xl font-black text-amber-900">{v}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Prime preview */}
+              <div className="bg-[#1a3a6b] rounded-2xl p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-blue-300 text-[9px] font-black uppercase tracking-widest">Prime estimée (TTC)</p>
+                  <p className="text-white font-black text-3xl mt-1">{quittance.totalAPayer} DZD</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-blue-300 text-[9px] font-black uppercase tracking-widest">Prime Nette</p>
+                  <p className="text-white font-black text-xl mt-1">{quittance.primeNette} DZD</p>
+                </div>
+              </div>
+            </>
           )}
 
-          {/* ════ ÉTAPE 3 — GARANTIES RÉCAP ════ */}
+          {/* ════ ÉTAPE 3 — GARANTIES & SMP ════ */}
           {step === 3 && (
-            <div className="bg-gradient-to-br from-[#0f2247] to-[#1a3a6b] rounded-2xl p-8 text-white">
-              <h3 className="text-xl font-black mb-6 border-b-2 border-[#e89d1b] pb-4">
-                📋 Récapitulatif des Garanties Souscrites
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {Object.entries(form.garanties).filter(([,v]) => v).map(([key]) => (
-                  <div key={key} className="flex items-center gap-3 bg-white/10 px-4 py-3 rounded-xl border border-white/20 backdrop-blur-sm">
-                    <div className="w-6 h-6 rounded-full bg-[#e89d1b] flex items-center justify-center flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <span className="font-semibold text-sm">{GARANTIES_LABELS[key]}</span>
-                  </div>
-                ))}
+            <>
+              {/* Garanties */}
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+                <h3 className="text-xs font-black uppercase tracking-widest text-blue-800 mb-4">🛡️ Garanties Souscrites</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {GARANTIES_CONFIG.map(g => (
+                    <label key={g.key}
+                      className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all
+                        ${form.garanties[g.key] ? 'bg-[#1a3a6b] border-[#1a3a6b] text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
+                      <div className="flex items-center gap-3">
+                        <input type="checkbox" name={g.key} checked={form.garanties[g.key]} onChange={upd}
+                          disabled={g.required} className="w-4 h-4 accent-orange-500 shrink-0" />
+                        <div>
+                          <p className="text-xs font-black uppercase">{g.label}</p>
+                          {g.required && <p className="text-[8px] font-black text-orange-400 uppercase">Obligatoire</p>}
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-bold opacity-70 text-right">{g.info}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+
+              {/* SMP */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-600 mb-4">💎 Valeurs & SMP</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label:'Valeur Vénale (DZD) *',   name:'valeurVenale'    },
+                    { label:'Valeur à Neuf (DZD)',      name:'valeurANeuf'     },
+                    { label:'Capital Assuré (DZD)',     name:'capitalAssure'   },
+                    { label:'Auto-Radio (DZD)',         name:'valeurAutoRadio' },
+                  ].map(f => (
+                    <div key={f.name} className="flex flex-col gap-1">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{f.label}</label>
+                      <input name={f.name} type="number" value={form[f.name] ?? ''} onChange={upd}
+                        className="bg-transparent text-2xl font-black border-b-2 border-slate-300 focus:border-[#1a3a6b] outline-none pb-1 transition-all text-slate-900" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Réduction */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+                <h3 className="text-xs font-black uppercase tracking-widest text-amber-800 mb-4">🏷️ Réduction Commerciale</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {REF.reductions.map(r => (
+                    <button key={r.id} type="button" onClick={() => setForm(p => ({...p, reduction: r.id}))}
+                      className={`p-3 rounded-xl border-2 text-center transition-all ${form.reduction === r.id ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white border-amber-200 text-amber-800 hover:border-amber-400'}`}>
+                      <p className="font-black text-xs uppercase">{r.label}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
 
-          {/* ════ ÉTAPE 4 — QUITTANCE FINALE ════ */}
+          {/* ════ ÉTAPE 4 — DEVIS FINAL ════ */}
           {step === 4 && (
-            <div className="space-y-6">
-              <div className="bg-gradient-to-br from-[#0a1628] via-[#0f2247] to-[#1a3a6b] rounded-3xl p-10 relative overflow-hidden shadow-2xl border-b-8 border-[#e89d1b]">
+            <>
+              {/* Quittance */}
+              <div className="bg-gradient-to-br from-[#0a1628] via-[#0f2247] to-[#1a3a6b] rounded-3xl p-8 relative overflow-hidden shadow-2xl border-b-4 border-[#e89d1b]">
                 <div className="absolute -top-16 -right-16 text-[18rem] font-black opacity-[0.03] select-none text-white">SAA</div>
-                <div className="relative z-10 flex flex-col lg:flex-row justify-between gap-12">
-                  <div className="flex-1 space-y-1">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-300 border-b border-white/10 pb-3 mb-4">
-                      Décomposition de la Quittance
-                    </h3>
+                <div className="relative z-10 flex flex-col lg:flex-row justify-between gap-8">
+                  <div className="flex-1 space-y-0.5">
+                    <h3 className="text-[9px] font-black uppercase tracking-widest text-blue-300 border-b border-white/10 pb-3 mb-3">Décomposition</h3>
                     {[
                       ["Prime de Base",             quittance.primeBase,           false],
-                      ["+ Options",                 quittance.totalOptions,        false],
+                      ["+ Garanties",               quittance.totalOptions,        false],
+                      ["= Prime avant réduction",   quittance.primeAvantReduction, true ],
                       ["− Réduction",               quittance.montantReduction,    false],
                       ["+ Majorations",             quittance.totalMajorations,    false],
                       ["Prime Nette",               quittance.primeNette,          true ],
-                      ["Accessoires (Auto-Radio)",  quittance.accessoires,         false],
-                      ["Taxes / Prime (19%)",       quittance.taxesPrime,          false],
-                      ["Taxes / Accessoires (19%)", quittance.taxeAccessoires,     false],
-                      ["Total Taxes",               quittance.totalTaxes,          true ],
-                      ["Timbre de Dimension",       quittance.timbreDimension,     false],
-                      ["Timbre Gradué",             quittance.timbreGradue,        false],
+                      ["Taxes (19%)",               quittance.totalTaxes,          false],
+                      ["Timbres",                   quittance.timbreDimension,     false],
                     ].map(([l,v,a]) => <QRow key={l} label={l} value={v} accent={a} />)}
-                    <div className="flex flex-wrap gap-2 pt-4">
-                      {[form.wilaya, `Zone ${form.zone}`, form.genreVehicule, form.fractionnement].map(t => <Tag key={t}>{t}</Tag>)}
-                    </div>
                   </div>
-                  <div className="text-center bg-white/5 px-10 py-8 rounded-2xl border border-white/10 backdrop-blur-md self-start">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-300 mb-3">Net à Payer (TTC)</p>
-                    <div className="text-7xl font-black tracking-tighter leading-none mb-2 text-white">
-                      {quittance.totalAPayer}
-                    </div>
-                    <p className="text-lg font-bold text-slate-400">DINARS ALGÉRIENS</p>
+                  <div className="text-center bg-white/5 px-8 py-6 rounded-2xl border border-white/10 self-start min-w-[200px]">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-300 mb-3">Net à Payer (TTC)</p>
+                    <div className="text-6xl font-black tracking-tighter leading-none mb-2 text-white">{quittance.totalAPayer}</div>
+                    <p className="text-sm font-bold text-slate-400">DZD / an</p>
                   </div>
                 </div>
               </div>
 
+              {/* Récap client */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <SectionCard title="Détails du Dossier" color="blue">
-                  {infosDossier.map(([l,v]) => (
-                    <div key={l} className="flex justify-between py-2 border-b border-blue-200 text-sm">
-                      <span className="text-slate-600 font-semibold">{l}</span>
-                      <span className="font-bold text-slate-800">{v}</span>
+                <div className="bg-white border border-slate-200 rounded-2xl p-5">
+                  <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4">Récapitulatif Assuré</h3>
+                  {[
+                    ["Nom",            form.nomAssure     || '—'],
+                    ["Email",          form.email         || '—'],
+                    ["Téléphone",      form.telephone     || '—'],
+                    ["Wilaya",         form.wilaya        || '—'],
+                    ["Véhicule",       `${form.marque || '—'} · ${form.immatriculation || '—'}`],
+                    ["Genre",          form.genreVehicule ],
+                    ["Énergie",        form.energie       ],
+                    ["Date Effet",     form.dateEffet     ],
+                    ["Échéance",       form.dateEcheance  || '—'],
+                    ["Fractionnement", form.fractionnement],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-1.5 border-b border-slate-100 last:border-0 text-xs">
+                      <span className="text-slate-400 font-bold uppercase">{k}</span>
+                      <span className="text-slate-800 font-black">{v}</span>
                     </div>
                   ))}
-                </SectionCard>
-                <SectionCard title="Commissions" color="green">
-                  {[["Apport (12%)",`${quittance.apport} DZD`],["Gestion",`${quittance.gestion} DZD`],["Total Commissions",`${quittance.totalCommissions} DZD`]].map(([l,v],i) => (
-                    <div key={l} className={`flex justify-between py-2 text-sm ${i===2?'border-t-2 border-green-300 pt-3 mt-2 font-black text-base':'border-b border-green-200'}`}>
-                      <span className="text-slate-600 font-semibold">{l}</span>
-                      <span className="font-bold text-green-800">{v}</span>
-                    </div>
-                  ))}
-                </SectionCard>
-              </div>
+                </div>
 
-              {/* Bandeau auth si non connecté */}
-              {!user && (
-                <div className="bg-[#e89d1b]/10 border-2 border-[#e89d1b]/40 rounded-2xl p-5 flex items-center justify-between">
-                  <div>
-                    <p className="font-black text-[#c27d0a] uppercase tracking-wider text-sm">
-                      🔒 Créez un compte pour finaliser
-                    </p>
-                    <p className="text-slate-500 text-xs mt-1">
-                      Imprimez, payez ou sauvegardez ce devis en toute sécurité.
+                <div className="space-y-4">
+                  {/* Garanties choisies */}
+                  <div className="bg-[#1a3a6b] rounded-2xl p-4">
+                    <h3 className="text-[9px] font-black uppercase tracking-widest text-blue-300 mb-3">Garanties Souscrites</h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(form.garanties).filter(([,v]) => v).map(([k]) => (
+                        <span key={k} className="text-[8px] font-black uppercase px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-400 border border-orange-400/30">
+                          {k.toUpperCase()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Commissions */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                    <h3 className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-3">Commissions</h3>
+                    {[
+                      ["Apport (12%)", quittance.apport],
+                      ["Gestion",      quittance.gestion],
+                      ["Total",        quittance.totalCommissions],
+                    ].map(([l, v], i) => (
+                      <div key={l} className={`flex justify-between py-2 text-xs ${i === 2 ? 'border-t-2 border-amber-300 pt-3 mt-1 font-black text-sm' : 'border-b border-amber-200'}`}>
+                        <span className="text-slate-600">{l}</span>
+                        <span className="font-mono font-bold">{v} DZD</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Bandeau info */}
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                    <p className="text-emerald-700 text-xs font-bold leading-relaxed">
+                      ✅ En soumettant ce devis, un agent SAA vous contactera pour valider votre dossier et vous envoyer vos identifiants par email.
                     </p>
                   </div>
-                  <div className="text-2xl">→</div>
+
+                  {/* Erreur */}
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                      <p className="text-red-600 text-xs font-bold">❌ {error}</p>
+                    </div>
+                  )}
+
+                  {/* Bouton soumettre */}
+                  <button onClick={handleSubmit} disabled={submitting}
+                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-lg">
+                    {submitting ? '⏳ Envoi en cours...' : '📤 Soumettre ma demande à l\'agent'}
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            </>
           )}
 
-          {/* ── NAVIGATION ── */}
-          <div className="mt-10 flex justify-between items-center border-t-2 border-slate-100 pt-8">
-            <button
-              onClick={() => step > 1 ? setStep(step - 1) : onGoHome()}
-              className="px-6 py-3 text-slate-500 hover:text-red-600 font-black uppercase text-[10px] tracking-widest transition-all hover:bg-red-50 rounded-lg"
-            >
-              {step === 1 ? "✕ Annuler" : "← Précédent"}
+          {/* NAVIGATION */}
+          <div className="flex justify-between items-center border-t-2 border-slate-100 pt-6 mt-4">
+            <button onClick={() => step > 1 ? setStep(step - 1) : onGoHome()}
+              className="px-6 py-2.5 text-slate-500 hover:text-red-600 font-black uppercase text-[10px] tracking-widest transition-all hover:bg-red-50 rounded-lg">
+              {step === 1 ? '✕ Annuler' : '← Précédent'}
             </button>
 
-            <div className="text-center">
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Étape {step} / 4</p>
-              <div className="flex gap-2 justify-center">
-                {[1,2,3,4].map(s => (
-                  <div key={s} className={`h-1.5 rounded-full transition-all duration-500 ${
-                    s === step ? 'w-8 bg-[#1a3a6b]' : s < step ? 'w-5 bg-[#e89d1b]' : 'w-5 bg-slate-200'
-                  }`} />
-                ))}
-              </div>
+            <div className="flex gap-1.5">
+              {[1,2,3,4].map(s => (
+                <div key={s} className={`h-1.5 rounded-full transition-all duration-300 ${s === step ? 'w-8 bg-[#1a3a6b]' : s < step ? 'w-4 bg-[#e89d1b]' : 'w-4 bg-slate-200'}`} />
+              ))}
             </div>
 
-            <button
-              onClick={() => step < 4 ? setStep(step + 1) : handleSave()}
-              className="bg-[#1a3a6b] hover:bg-[#0f2247] text-white px-10 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg active:scale-95"
-            >
-              {step === 4 ? (user ? "✅ Émettre la Police" : "🔒 Finaliser & Créer un Compte") : "Suivant →"}
-            </button>
+            {step < 4 && (
+              <button onClick={() => setStep(step + 1)}
+                className="bg-[#1a3a6b] hover:bg-[#0f2247] text-white px-8 py-2.5 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg active:scale-95">
+                Étape suivante →
+              </button>
+            )}
+            {step === 4 && <div className="w-32" />}
           </div>
         </div>
       </div>
 
-      <p className="text-center mt-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+      <p className="text-center mt-6 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
         SAA ORASS Suite © 2026 · Direction des Systèmes d'Information
       </p>
     </div>
